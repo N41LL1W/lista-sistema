@@ -3,28 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Lista de Compras</title>
+    <title>Gerenciador de Listas de Compras</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Minha Lista de Compras</h1>
+    <div class="container" id="lista-manager">
+        <h1>Gerenciar Listas</h1>
         
-        <div class="add-item-container">
-            <input type="text" id="novo-item" placeholder="Adicionar novo item...">
-            <button id="adicionar-btn">Adicionar</button>
+        <div class="criar-lista-container">
+            <input type="text" id="nova-lista-nome" placeholder="Nome da nova lista...">
+            <button id="criar-lista-btn">Criar Lista</button>
         </div>
 
-        <div class="lista-container">
-            <h2>Itens na Lista</h2>
-            <ul id="lista-compras">
+        <div class="listas-salvas">
+            <h2>Listas Salvas</h2>
+            <ul id="listas-salvas-ul">
                 </ul>
         </div>
-        
+    </div>
+
+    <div class="container" id="lista-editor" style="display: none;">
+        <h1 id="lista-titulo"></h1>
+        <div class="add-item-container">
+            <input type="text" id="novo-item-lista" placeholder="Adicionar item à lista...">
+            <button id="adicionar-item-lista-btn">Adicionar</button>
+        </div>
+        <div class="lista-container">
+            <ul id="itens-lista">
+                </ul>
+        </div>
+        <div class="acoes-container">
+            <button id="voltar-btn">Voltar para Listas</button>
+            <button id="iniciar-compra-btn">Iniciar Compra</button>
+        </div>
+    </div>
+    
+    <div class="container" id="modo-compra" style="display: none;">
+        <h1 id="compra-titulo"></h1>
+        <div class="lista-container">
+            <ul id="itens-compra">
+                </ul>
+        </div>
         <div class="total-container">
             <h3>Total da Compra: R$ <span id="total-compra">0.00</span></h3>
         </div>
-        
+        <div class="acoes-container">
+            <button id="voltar-compra-btn">Voltar</button>
+        </div>
     </div>
 
     <script src="script.js"></script>
