@@ -10,6 +10,25 @@
     <div class="container" id="lista-manager">
         <h1>Gerenciar Listas</h1>
         
+        <div class="container" id="modo-compra" style="display: none;">
+            <h1 id="compra-titulo"></h1>
+            
+            <div class="add-item-container">
+                <input type="text" id="novo-item-compra" placeholder="Adicionar novo item...">
+                <button id="adicionar-item-compra-btn">Adicionar</button>
+            </div>
+            <div class="lista-container">
+                <ul id="itens-compra">
+                    </ul>
+            </div>
+            <div class="total-container">
+                <h3>Total da Compra: R$ <span id="total-compra">0.00</span></h3>
+            </div>
+            <div class="acoes-container">
+                <button id="voltar-compra-btn">Voltar</button>
+            </div>
+        </div>
+        
         <div class="criar-lista-container">
             <input type="text" id="nova-lista-nome" placeholder="Nome da nova lista...">
             <button id="criar-lista-btn">Criar Lista</button>

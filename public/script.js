@@ -14,11 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const novoItemListaInput = document.getElementById('novo-item-lista');
     const adicionarItemListaBtn = document.getElementById('adicionar-item-lista-btn');
     const itensListaUL = document.getElementById('itens-lista');
-    const voltarBtn = document.getElementById('voltar-btn');
+    const voltarBtn = document = document.getElementById('voltar-btn');
     const iniciarCompraBtn = document.getElementById('iniciar-compra-btn');
 
     // Referências da seção de compra
     const compraTitulo = document.getElementById('compra-titulo');
+    const novoItemCompraInput = document.getElementById('novo-item-compra'); // NOVO INPUT
+    const adicionarItemCompraBtn = document.getElementById('adicionar-item-compra-btn'); // NOVO BOTÃO
     const itensCompraUL = document.getElementById('itens-compra');
     const totalCompraSpan = document.getElementById('total-compra');
     const voltarCompraBtn = document.getElementById('voltar-compra-btn');
@@ -85,13 +87,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const atualizarItem = async (itemId, valor, quantidade) => {
-        await fetch(`/api/itens/${itemId}`, {
+    // NOVO CÓDIGO PARA ADICIONAR ITEM NO MODO COMPRA
+    const adicionarItemEmCompra = async (listaId, nomeItem) => {
+        if (!nomeItem.trim()) return;
+        const response = await fetch(`/api/listas/${listaId}/itens`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome_item: nomeItem }),
+        });
+        if (response.ok) {
+            novoItemCompraInput.value = '';
+            // Recarrega a lista completa para atualizar o display
+            const novosItens = await response.json();
+            itensAtivos.push(novosItens);
+            renderizarItensCompra();
+        }
+    };
+
+    // CORREÇÃO: Função para atualizar um item sem recarregar toda a lista
+    const atualizarItem = async (id, valor, quantidade) => {
+        const itemIndex = itensAtivos.findIndex(item => item.id == id);
+        if (itemIndex > -1) {
+            itensAtivos[itemIndex].valor_unitario = valor;
+            itensAtivos[itemIndex].quantidade = quantidade;
+            renderizarTotais(); // Apenas recalcula o total
+        }
+
+        await fetch(`/api/itens/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ valor_unitario: valor, quantidade: quantidade, comprado: false }),
         });
-        renderizarItensCompra();
     };
 
     // --- Funções de Renderização ---
@@ -106,11 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderizarItensCompra = () => {
         itensCompraUL.innerHTML = '';
-        let totalCompra = 0;
         itensAtivos.forEach(item => {
             const subtotal = (item.valor_unitario || 0) * (item.quantidade || 0);
-            totalCompra += subtotal;
             const li = document.createElement('li');
+            li.className = 'lista-item';
             li.innerHTML = `
                 <span class="item-nome">${item.nome_item}</span>
                 <div class="item-inputs">
@@ -122,8 +147,16 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             itensCompraUL.appendChild(li);
         });
-        totalCompraSpan.textContent = totalCompra.toFixed(2);
+        renderizarTotais();
     };
+    
+    const renderizarTotais = () => {
+        let totalCompra = 0;
+        itensAtivos.forEach(item => {
+            totalCompra += (item.valor_unitario || 0) * (item.quantidade || 0);
+        });
+        totalCompraSpan.textContent = totalCompra.toFixed(2);
+    }
 
     // --- Event Listeners ---
     criarListaBtn.addEventListener('click', async () => {
@@ -150,6 +183,12 @@ document.addEventListener('DOMContentLoaded', () => {
     novoItemListaInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') adicionarItem(listaAtivaId, novoItemListaInput.value);
     });
+    
+    // NOVOS EVENTOS PARA O MODO COMPRA
+    adicionarItemCompraBtn.addEventListener('click', () => adicionarItemEmCompra(listaAtivaId, novoItemCompraInput.value));
+    novoItemCompraInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') adicionarItemEmCompra(listaAtivaId, novoItemCompraInput.value);
+    });
 
     voltarBtn.addEventListener('click', () => mostrarManager());
     voltarCompraBtn.addEventListener('click', () => mostrarManager());
@@ -162,9 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = e.target;
         if (input.classList.contains('valor-input') || input.classList.contains('quantidade-input')) {
             const id = input.dataset.id;
-            const li = input.closest('li');
-            const valorInput = li.querySelector('.valor-input');
-            const quantidadeInput = li.querySelector('.quantidade-input');
+            const valorInput = input.closest('li').querySelector('.valor-input');
+            const quantidadeInput = input.closest('li').querySelector('.quantidade-input');
 
             const valor = parseFloat(valorInput.value) || 0;
             const quantidade = parseInt(quantidadeInput.value) || 0;
@@ -173,6 +211,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Inicia na tela de gerenciamento de listas
     mostrarManager();
 });
