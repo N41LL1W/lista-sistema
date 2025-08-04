@@ -4,7 +4,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
     margin: 0;
 }
 
@@ -13,60 +13,106 @@ body {
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 400px;
+    width: 600px;
     text-align: center;
 }
 
-h1 {
+h1, h2 {
     color: #333;
     margin-bottom: 20px;
 }
 
-.form-container {
+.add-item-container {
     display: flex;
-    flex-direction: column;
-    gap: 15px;
-    text-align: left;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
-label {
-    font-weight: bold;
-    color: #555;
-}
-
-input, select, button {
+#novo-item {
+    flex-grow: 1;
     padding: 10px;
     border-radius: 5px;
     border: 1px solid #ccc;
     font-size: 16px;
 }
 
-button {
+#adicionar-btn {
+    padding: 10px 20px;
     background-color: #007bff;
     color: white;
     border: none;
+    border-radius: 5px;
     cursor: pointer;
     font-weight: bold;
 }
 
-button:hover {
+#adicionar-btn:hover {
     background-color: #0056b3;
 }
 
-#status-message {
-    margin-top: 15px;
-    font-weight: bold;
+.lista-container {
+    text-align: left;
 }
 
-#total-container {
-    margin-top: 20px;
-    padding: 10px;
-    background-color: #e9ecef;
+#lista-compras {
+    list-style: none;
+    padding: 0;
+}
+
+.lista-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
     border-radius: 5px;
+    margin-bottom: 10px;
 }
 
-#total-item {
-    font-size: 1.2em;
+.item-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.item-nome {
+    font-weight: bold;
+    color: #555;
+    flex-grow: 1;
+}
+
+.item-inputs {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.item-inputs input {
+    width: 80px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.item-total {
     font-weight: bold;
     color: #28a745;
+    min-width: 80px;
+    text-align: right;
+}
+
+.total-container {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    text-align: right;
+}
+
+#total-compra {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #007bff;
 }
