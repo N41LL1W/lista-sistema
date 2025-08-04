@@ -14,13 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const novoItemListaInput = document.getElementById('novo-item-lista');
     const adicionarItemListaBtn = document.getElementById('adicionar-item-lista-btn');
     const itensListaUL = document.getElementById('itens-lista');
-    const voltarBtn = document = document.getElementById('voltar-btn');
+    const voltarBtn = document.getElementById('voltar-btn');
     const iniciarCompraBtn = document.getElementById('iniciar-compra-btn');
 
     // Referências da seção de compra
     const compraTitulo = document.getElementById('compra-titulo');
-    const novoItemCompraInput = document.getElementById('novo-item-compra'); // NOVO INPUT
-    const adicionarItemCompraBtn = document.getElementById('adicionar-item-compra-btn'); // NOVO BOTÃO
+    const novoItemCompraInput = document.getElementById('novo-item-compra');
+    const adicionarItemCompraBtn = document.getElementById('adicionar-item-compra-btn');
     const itensCompraUL = document.getElementById('itens-compra');
     const totalCompraSpan = document.getElementById('total-compra');
     const voltarCompraBtn = document.getElementById('voltar-compra-btn');
@@ -87,7 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // NOVO CÓDIGO PARA ADICIONAR ITEM NO MODO COMPRA
     const adicionarItemEmCompra = async (listaId, nomeItem) => {
         if (!nomeItem.trim()) return;
         const response = await fetch(`/api/listas/${listaId}/itens`, {
@@ -97,22 +96,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         if (response.ok) {
             novoItemCompraInput.value = '';
-            // Recarrega a lista completa para atualizar o display
             const novosItens = await response.json();
             itensAtivos.push(novosItens);
             renderizarItensCompra();
         }
     };
 
-    // CORREÇÃO: Função para atualizar um item sem recarregar toda a lista
     const atualizarItem = async (id, valor, quantidade) => {
         const itemIndex = itensAtivos.findIndex(item => item.id == id);
         if (itemIndex > -1) {
             itensAtivos[itemIndex].valor_unitario = valor;
             itensAtivos[itemIndex].quantidade = quantidade;
-            renderizarTotais(); // Apenas recalcula o total
+            renderizarTotais();
         }
-
         await fetch(`/api/itens/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -198,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') adicionarItem(listaAtivaId, novoItemListaInput.value);
     });
     
-    // NOVOS EVENTOS PARA O MODO COMPRA
     adicionarItemCompraBtn.addEventListener('click', () => adicionarItemEmCompra(listaAtivaId, novoItemCompraInput.value));
     novoItemCompraInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') adicionarItemEmCompra(listaAtivaId, novoItemCompraInput.value);
