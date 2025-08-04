@@ -123,30 +123,44 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Funções de Renderização ---
     const renderizarItensLista = () => {
         itensListaUL.innerHTML = '';
-        itensAtivos.forEach(item => {
+        if (itensAtivos.length === 0) {
             const li = document.createElement('li');
-            li.innerHTML = `<span>${item.nome_item}</span>`;
+            li.innerHTML = '<span style="color: #6c757d; font-style: italic;">Adicione itens a esta lista.</span>';
             itensListaUL.appendChild(li);
-        });
+            iniciarCompraBtn.disabled = true;
+        } else {
+            itensAtivos.forEach(item => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${item.nome_item}</span>`;
+                itensListaUL.appendChild(li);
+            });
+            iniciarCompraBtn.disabled = false;
+        }
     };
 
     const renderizarItensCompra = () => {
         itensCompraUL.innerHTML = '';
-        itensAtivos.forEach(item => {
-            const subtotal = (item.valor_unitario || 0) * (item.quantidade || 0);
+        if (itensAtivos.length === 0) {
             const li = document.createElement('li');
-            li.className = 'lista-item';
-            li.innerHTML = `
-                <span class="item-nome">${item.nome_item}</span>
-                <div class="item-inputs">
-                    <input type="number" class="valor-input" placeholder="R$" step="0.01" value="${item.valor_unitario || ''}" data-id="${item.id}">
-                    <span>x</span>
-                    <input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || ''}" data-id="${item.id}">
-                </div>
-                <span class="item-total">R$ ${subtotal.toFixed(2)}</span>
-            `;
+            li.innerHTML = '<span style="color: #6c757d; font-style: italic;">Sua lista de compras está vazia.</span>';
             itensCompraUL.appendChild(li);
-        });
+        } else {
+            itensAtivos.forEach(item => {
+                const subtotal = (item.valor_unitario || 0) * (item.quantidade || 0);
+                const li = document.createElement('li');
+                li.className = 'lista-item';
+                li.innerHTML = `
+                    <span class="item-nome">${item.nome_item}</span>
+                    <div class="item-inputs">
+                        <input type="number" class="valor-input" placeholder="R$" step="0.01" value="${item.valor_unitario || ''}" data-id="${item.id}">
+                        <span>x</span>
+                        <input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || ''}" data-id="${item.id}">
+                    </div>
+                    <span class="item-total">R$ ${subtotal.toFixed(2)}</span>
+                `;
+                itensCompraUL.appendChild(li);
+            });
+        }
         renderizarTotais();
     };
     
