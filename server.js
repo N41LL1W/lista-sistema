@@ -65,7 +65,7 @@ app.get('/api/listas/:listaId/itens', async (req, res) => {
     }
 });
 
-// Rota para atualizar o valor e a quantidade de um item
+// Rota para atualizar o valor, quantidade e status de um item
 app.put('/api/itens/:itemId', async (req, res) => {
     const { itemId } = req.params;
     const { valor_unitario, quantidade, comprado } = req.body;
@@ -99,31 +99,38 @@ app.delete('/api/itens/:itemId', async (req, res) => {
     }
 });
 
-// --- NOVO: Rota para deletar uma lista e todos os seus itens ---
+// Rota para deletar uma lista e todos os seus itens
 app.delete('/api/listas/:listaId', async (req, res) => {
     const { listaId } = req.params;
-    const client = await pool.connect(); // Pega uma conexão do pool para transação
+    const client = await pool.connect();
     try {
-        await client.query('BEGIN'); // Inicia uma transação
-        
-        // 1. Deleta todos os itens associados à lista
+        await client.query('BEGIN');
         await client.query('DELETE FROM itens_lista WHERE lista_id = $1', [listaId]);
-        
-        // 2. Deleta a lista principal
         const result = await client.query('DELETE FROM listas WHERE id = $1', [listaId]);
-        
-        await client.query('COMMIT'); // Confirma a transação
-        
+        await client.query('COMMIT');
         if (result.rowCount === 0) {
             return res.status(404).json({ message: 'Lista não encontrada.' });
         }
-        res.status(204).send(); // Sucesso
+        res.status(204).send();
     } catch (err) {
-        await client.query('ROLLBACK'); // Desfaz a transação em caso de erro
+        await client.query('ROLLBACK');
         console.error('Erro ao deletar lista:', err);
         res.status(500).json({ message: 'Erro ao deletar lista.', error: err.message });
     } finally {
-        client.release(); // Libera a conexão de volta para o pool
+        client.release();
+    }
+});
+
+// --- NOVO: Rota para resetar o estado de compra de todos os itens de uma lista ---
+app.put('/api/listas/:listaId/reset', async (req, res) => {
+    const { listaId } = req.params;
+    try {
+        const query = 'UPDATE itens_lista SET comprado = false, valor_unitario = NULL, quantidade = 1 WHERE lista_id = $1 RETURNING *';
+        const result = await pool.query(query, [listaId]);
+        res.status(200).json(result.rows); // Retorna os itens atualizados
+    } catch (err) {
+        console.error('Erro ao resetar a lista:', err);
+        res.status(500).json({ message: 'Erro ao resetar a lista.', error: err.message });
     }
 });
 

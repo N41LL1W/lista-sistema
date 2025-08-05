@@ -135,11 +135,12 @@ button:hover {
     display: flex;
     justify-content: space-between;
     margin-top: 20px;
+    gap: 10px;
 }
 
 .acoes-container button {
     flex-grow: 1;
-    margin: 0 5px;
+    margin: 0;
 }
 
 .item-editavel {
@@ -153,17 +154,17 @@ button:hover {
     margin-bottom: 10px;
 }
 
-.deletar-item-btn {
+.deletar-item-btn, .deletar-lista-btn {
     background-color: #dc3545; 
     color: white;
-    padding: 8px 12px;
-    font-size: 14px;
     flex-shrink: 0;
 }
-
-.deletar-item-btn:hover {
+.deletar-item-btn:hover, .deletar-lista-btn:hover {
     background-color: #c82333;
 }
+.deletar-item-btn { padding: 8px 12px; font-size: 14px; }
+.deletar-lista-btn { padding: 10px 15px; font-size: 14px; }
+
 
 .nome-lista-salva {
     flex-grow: 1;
@@ -176,22 +177,11 @@ button:hover {
     flex-shrink: 0;
 }
 
-.deletar-lista-btn {
-    background-color: #dc3545;
-    padding: 10px 15px;
-    font-size: 14px;
-}
-
-.deletar-lista-btn:hover {
-    background-color: #c82333;
-}
-
 .abrir-lista-btn {
     padding: 10px 15px;
     font-size: 14px;
 }
 
-/* --- NOVOS ESTILOS PARA O MODO COMPRA --- */
 .lista-item .item-info {
     display: flex;
     align-items: center;
@@ -212,7 +202,6 @@ button:hover {
     cursor: pointer;
 }
 
-/* Estilo para item comprado */
 .lista-item.comprado {
     background-color: #f0f0f0;
     opacity: 0.7;
@@ -223,24 +212,30 @@ button:hover {
     color: #888;
 }
 
-/* Ajustes no container de totais */
 .total-container h4 {
     margin: 0 0 10px 0;
     color: #555;
     font-weight: normal;
 }
-
-.total-container h3 {
-    margin: 0;
-}
+.total-container h3 { margin: 0; }
 
 #total-carrinho {
     font-weight: bold;
-    color: #28a745; /* Verde sucesso */
+    color: #28a745;
     font-size: 1.2em;
 }
 
 #total-lista {
    font-size: 1.2em;
    color: #007bff;
+}
+
+/* --- NOVO: ESTILO PARA BOTÃO SECUNDÁRIO --- */
+.btn-secundario {
+    background-color: #6c757d; /* Cinza */
+    color: white;
+}
+
+.btn-secundario:hover {
+    background-color: #5a6268;
 }
