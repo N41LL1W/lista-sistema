@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const novoItemCompraInput = document.getElementById('novo-item-compra');
     const adicionarItemCompraBtn = document.getElementById('adicionar-item-compra-btn');
     const itensCompraUL = document.getElementById('itens-compra');
-    const totalCompraSpan = document.getElementById('total-compra');
     const voltarCompraBtn = document.getElementById('voltar-compra-btn');
 
     let listaAtivaId = null;
@@ -54,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Funções de Lógica do Backend ---
-    // --- ATUALIZADO: carregarListas com botão de deletar ---
     const carregarListas = async () => {
         try {
             const response = await fetch('/api/listas');
@@ -82,7 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/listas/${listaId}/itens`);
             if (!response.ok) throw new Error('Erro ao carregar itens');
-            itensAtivos = await response.json();
+            // Garante que o estado 'comprado' seja sempre booleano
+            const itens = await response.json();
+            itensAtivos = itens.map(item => ({...item, comprado: !!item.comprado}));
             renderizarItensLista();
         } catch (error) {
             console.error("Erro ao carregar itens da lista:", error);
@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 novoItemCompraInput.value = '';
                 const novoItem = await response.json();
-                itensAtivos.push(novoItem);
+                itensAtivos.push({...novoItem, comprado: false});
                 renderizarItensCompra();
             }
         } catch (error) {
@@ -127,18 +127,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    const atualizarItem = async (id, valor, quantidade) => {
+    // ATUALIZADO: Lida com o estado 'comprado'
+    const atualizarItem = async (id, valor, quantidade, comprado) => {
         const itemIndex = itensAtivos.findIndex(item => item.id == id);
         if (itemIndex > -1) {
             itensAtivos[itemIndex].valor_unitario = valor;
             itensAtivos[itemIndex].quantidade = quantidade;
-            renderizarTotais();
+            itensAtivos[itemIndex].comprado = comprado;
         }
+
+        renderizarTotais();
+        
         try {
             await fetch(`/api/itens/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ valor_unitario: valor, quantidade: quantidade, comprado: false }),
+                body: JSON.stringify({ valor_unitario: valor, quantidade: quantidade, comprado: comprado }),
             });
         } catch (error) {
             console.error("Erro ao atualizar item:", error);
@@ -147,9 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const deletarItem = async (itemId) => {
         try {
-            const response = await fetch(`/api/itens/${itemId}`, {
-                method: 'DELETE',
-            });
+            const response = await fetch(`/api/itens/${itemId}`, { method: 'DELETE' });
             if (response.ok) {
                 await carregarItensDaLista(listaAtivaId);
             } else {
@@ -160,12 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- NOVO: Função para deletar uma lista ---
     const deletarLista = async (listaId) => {
         try {
-            const response = await fetch(`/api/listas/${listaId}`, {
-                method: 'DELETE',
-            });
+            const response = await fetch(`/api/listas/${listaId}`, { method: 'DELETE' });
             if (response.ok) {
                 await carregarListas();
             } else {
@@ -180,9 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderizarItensLista = () => {
         itensListaUL.innerHTML = '';
         if (itensAtivos.length === 0) {
-            const li = document.createElement('li');
-            li.innerHTML = '<span style="color: #6c757d; font-style: italic;">Adicione itens a esta lista.</span>';
-            itensListaUL.appendChild(li);
+            itensListaUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Adicione itens a esta lista.</li>';
             iniciarCompraBtn.disabled = true;
         } else {
             itensAtivos.forEach(item => {
@@ -198,23 +195,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // ATUALIZADO: renderizarItensCompra com checkbox
     const renderizarItensCompra = () => {
         itensCompraUL.innerHTML = '';
         if (itensAtivos.length === 0) {
             itensCompraUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Sua lista de compras está vazia.</li>';
         } else {
             itensAtivos.forEach(item => {
-                const subtotal = (item.valor_unitario || 0) * (item.quantidade || 0);
+                const subtotal = (item.valor_unitario || 0) * (item.quantidade || 1);
                 const li = document.createElement('li');
-                li.className = 'lista-item';
+                li.className = `lista-item ${item.comprado ? 'comprado' : ''}`;
+                li.dataset.id = item.id;
+
                 li.innerHTML = `
-                    <span class="item-nome">${item.nome_item}</span>
-                    <div class="item-inputs">
-                        <input type="number" class="valor-input" placeholder="R$" step="0.01" value="${item.valor_unitario || ''}" data-id="${item.id}">
-                        <span>x</span>
-                        <input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || 1}" data-id="${item.id}">
+                    <div class="item-info">
+                        <input type="checkbox" class="item-checkbox" ${item.comprado ? 'checked' : ''}>
+                        <span class="item-nome">${item.nome_item}</span>
                     </div>
-                    <span class="item-total">R$ ${subtotal.toFixed(2)}</span>
+                    <div class="item-detalhes">
+                        <div class="item-inputs">
+                            <input type="number" class="valor-input" placeholder="R$" step="0.01" value="${item.valor_unitario || ''}">
+                            <span>x</span>
+                            <input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || 1}">
+                        </div>
+                        <span class="item-total">R$ ${subtotal.toFixed(2)}</span>
+                    </div>
                 `;
                 itensCompraUL.appendChild(li);
             });
@@ -222,9 +227,18 @@ document.addEventListener('DOMContentLoaded', () => {
         renderizarTotais();
     };
     
+    // ATUALIZADO: renderizarTotais para dois valores
     const renderizarTotais = () => {
-        const totalCompra = itensAtivos.reduce((acc, item) => acc + (item.valor_unitario || 0) * (item.quantidade || 0), 0);
-        totalCompraSpan.textContent = totalCompra.toFixed(2);
+        const totalLista = itensAtivos.reduce((acc, item) => acc + (item.valor_unitario || 0) * (item.quantidade || 1), 0);
+        const totalCarrinho = itensAtivos.reduce((acc, item) => {
+            return item.comprado ? acc + (item.valor_unitario || 0) * (item.quantidade || 1) : acc;
+        }, 0);
+
+        // Verifica se os elementos existem antes de tentar acessá-los
+        const totalListaSpan = document.getElementById('total-lista');
+        const totalCarrinhoSpan = document.getElementById('total-carrinho');
+        if(totalListaSpan) totalListaSpan.textContent = totalLista.toFixed(2);
+        if(totalCarrinhoSpan) totalCarrinhoSpan.textContent = totalCarrinho.toFixed(2);
     };
 
     // --- Event Listeners ---
@@ -239,40 +253,28 @@ document.addEventListener('DOMContentLoaded', () => {
         novaListaNomeInput.value = '';
         carregarListas();
     });
-
-    // --- ATUALIZADO: Event Listener para abrir ou deletar uma lista ---
+    
     listasSalvasUL.addEventListener('click', (e) => {
         const target = e.target;
         if (target.classList.contains('abrir-lista-btn')) {
-            const listaId = target.dataset.id;
-            const nomeLista = target.dataset.nome;
-            mostrarEditor(listaId, nomeLista);
+            mostrarEditor(target.dataset.id, target.dataset.nome);
         } else if (target.classList.contains('deletar-lista-btn')) {
-            const listaId = target.dataset.id;
-            if (confirm('Tem certeza que deseja deletar esta lista e todos os seus itens? Esta ação não pode ser desfeita.')) {
-                deletarLista(listaId);
+            if (confirm('Tem certeza que deseja deletar esta lista e todos os seus itens?')) {
+                deletarLista(target.dataset.id);
             }
         }
     });
 
     itensListaUL.addEventListener('click', (e) => {
         if (e.target.classList.contains('deletar-item-btn')) {
-            const itemId = e.target.dataset.id;
             if (confirm('Tem certeza que deseja deletar este item?')) {
-                deletarItem(itemId);
+                deletarItem(e.target.dataset.id);
             }
         }
     });
 
     adicionarItemListaBtn.addEventListener('click', () => adicionarItem(listaAtivaId, novoItemListaInput.value));
-    novoItemListaInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') adicionarItem(listaAtivaId, novoItemListaInput.value);
-    });
-    
     adicionarItemCompraBtn.addEventListener('click', () => adicionarItemEmCompra(listaAtivaId, novoItemCompraInput.value));
-    novoItemCompraInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') adicionarItemEmCompra(listaAtivaId, novoItemCompraInput.value);
-    });
 
     voltarBtn.addEventListener('click', mostrarManager);
     voltarCompraBtn.addEventListener('click', mostrarManager);
@@ -282,21 +284,31 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarCompra(listaTitulo.textContent.replace('Lista: ', ''));
     });
     
-    itensCompraUL.addEventListener('input', (e) => {
-        const input = e.target;
-        if (input.classList.contains('valor-input') || input.classList.contains('quantidade-input')) {
-            const id = input.dataset.id;
-            const li = input.closest('li');
-            const valorInput = li.querySelector('.valor-input');
-            const quantidadeInput = li.querySelector('.quantidade-input');
-            const totalSpan = li.querySelector('.item-total');
+    // ATUALIZADO: Listener unificado para 'change' em toda a lista de compra
+    itensCompraUL.addEventListener('change', (e) => {
+        const target = e.target;
+        if (target.classList.contains('valor-input') || target.classList.contains('quantidade-input') || target.classList.contains('item-checkbox')) {
+            const li = target.closest('li');
+            const id = li.dataset.id;
+            
+            const valor = parseFloat(li.querySelector('.valor-input').value) || 0;
+            const quantidade = parseInt(li.querySelector('.quantidade-input').value) || 1;
+            const comprado = li.querySelector('.item-checkbox').checked;
 
-            const valor = parseFloat(valorInput.value) || 0;
-            const quantidade = parseInt(quantidadeInput.value) || 0;
+            li.classList.toggle('comprado', comprado);
 
-            totalSpan.textContent = `R$ ${(valor * quantidade).toFixed(2)}`;
-            atualizarItem(id, valor, quantidade);
+            li.querySelector('.item-total').textContent = `R$ ${(valor * quantidade).toFixed(2)}`;
+            
+            atualizarItem(id, valor, quantidade, comprado);
         }
+    });
+
+    // Event listeners para 'Enter' continuam úteis
+    novoItemListaInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') adicionarItem(listaAtivaId, novoItemListaInput.value);
+    });
+    novoItemCompraInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') adicionarItemEmCompra(listaAtivaId, novoItemCompraInput.value);
     });
 
     mostrarManager();

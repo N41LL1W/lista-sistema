@@ -18,9 +18,7 @@
 
         <div class="listas-salvas">
             <h2>Listas Salvas</h2>
-            <ul id="listas-salvas-ul">
-                <!-- Listas salvas serão carregadas aqui -->
-            </ul>
+            <ul id="listas-salvas-ul"></ul>
         </div>
     </div>
 
@@ -40,7 +38,7 @@
         </div>
     </div>
     
-    <!-- Vista de Modo de Compra (CORRIGIDA) -->
+    <!-- Vista de Modo de Compra -->
     <div class="container" id="modo-compra" style="display: none;">
         <h1 id="compra-titulo"></h1>
 
@@ -52,9 +50,13 @@
         <div class="lista-container">
             <ul id="itens-compra"></ul>
         </div>
+        
+        <!-- ATUALIZADO: Container de totais para o modo compra -->
         <div class="total-container">
-            <h3>Total da Compra: R$ <span id="total-compra">0.00</span></h3>
+            <h4>Total no Carrinho: R$ <span id="total-carrinho">0.00</span></h4>
+            <h3>Total da Lista: R$ <span id="total-lista">0.00</span></h3>
         </div>
+
         <div class="acoes-container">
             <button id="voltar-compra-btn">Voltar</button>
         </div>

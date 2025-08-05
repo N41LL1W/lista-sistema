@@ -93,19 +93,14 @@ button:hover {
     border: 1px solid #e2e6ea;
     border-radius: 8px;
     margin-bottom: 10px;
-}
-
-.item-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+    transition: background-color 0.3s, opacity 0.3s;
 }
 
 .item-nome {
     font-weight: 600;
     color: #555;
-    flex-grow: 1;
     font-size: 1.1em;
+    transition: color 0.3s, text-decoration 0.3s;
 }
 
 .item-inputs {
@@ -134,12 +129,6 @@ button:hover {
     background-color: #e2f0ff;
     border-radius: 8px;
     text-align: right;
-}
-
-#total-compra {
-    font-size: 1.8em;
-    font-weight: bold;
-    color: #007bff;
 }
 
 .acoes-container {
@@ -176,29 +165,82 @@ button:hover {
     background-color: #c82333;
 }
 
-/* --- NOVOS ESTILOS PARA LISTA DE LISTAS --- */
 .nome-lista-salva {
-    flex-grow: 1; /* Faz o nome da lista ocupar o espaço disponível */
+    flex-grow: 1;
     font-weight: bold;
 }
 
 .botoes-lista {
     display: flex;
-    gap: 10px; /* Espaço entre os botões Abrir e Deletar */
-    flex-shrink: 0; /* Impede que a div dos botões encolha */
+    gap: 10px;
+    flex-shrink: 0;
 }
 
 .deletar-lista-btn {
-    background-color: #dc3545; /* Vermelho */
+    background-color: #dc3545;
     padding: 10px 15px;
     font-size: 14px;
 }
 
 .deletar-lista-btn:hover {
-    background-color: #c82333; /* Vermelho mais escuro */
+    background-color: #c82333;
 }
 
 .abrir-lista-btn {
     padding: 10px 15px;
     font-size: 14px;
+}
+
+/* --- NOVOS ESTILOS PARA O MODO COMPRA --- */
+.lista-item .item-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-grow: 1;
+}
+
+.lista-item .item-detalhes {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.item-checkbox {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+/* Estilo para item comprado */
+.lista-item.comprado {
+    background-color: #f0f0f0;
+    opacity: 0.7;
+}
+
+.lista-item.comprado .item-nome {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* Ajustes no container de totais */
+.total-container h4 {
+    margin: 0 0 10px 0;
+    color: #555;
+    font-weight: normal;
+}
+
+.total-container h3 {
+    margin: 0;
+}
+
+#total-carrinho {
+    font-weight: bold;
+    color: #28a745; /* Verde sucesso */
+    font-size: 1.2em;
+}
+
+#total-lista {
+   font-size: 1.2em;
+   color: #007bff;
 }
