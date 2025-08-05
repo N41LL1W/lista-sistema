@@ -114,23 +114,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (response.ok) {
                 novoItemCompraInput.value = '';
-                const novosItens = await response.json();
-                itensAtivos.push(novosItens);
-                renderizarItensCompra();
+                // CORREÇÃO: A API retorna um objeto único, não um array.
+                const novoItem = await response.json();
+                itensAtivos.push(novoItem); // Adiciona o novo item ao array local
+                renderizarItensCompra(); // Renderiza a lista atualizada
             }
         } catch (error) {
             console.error("Erro ao adicionar item em compra:", error);
         }
     };
-
+    
     const atualizarItem = async (id, valor, quantidade) => {
         const itemIndex = itensAtivos.findIndex(item => item.id == id);
         if (itemIndex > -1) {
             itensAtivos[itemIndex].valor_unitario = valor;
             itensAtivos[itemIndex].quantidade = quantidade;
-            renderizarTotais();
+            renderizarTotais(); // Apenas atualiza o total na tela para resposta rápida
         }
         try {
+            // Atualiza o banco de dados em segundo plano
             await fetch(`/api/itens/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -138,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) {
             console.error("Erro ao atualizar item:", error);
+            // Opcional: Reverter a mudança visual se a atualização falhar
         }
     };
 
@@ -145,9 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderizarItensLista = () => {
         itensListaUL.innerHTML = '';
         if (itensAtivos.length === 0) {
-            const li = document.createElement('li');
-            li.innerHTML = '<span style="color: #6c757d; font-style: italic;">Adicione itens a esta lista.</span>';
-            itensListaUL.appendChild(li);
+            itensListaUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Adicione itens a esta lista.</li>';
             iniciarCompraBtn.disabled = true;
         } else {
             itensAtivos.forEach(item => {
@@ -162,9 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderizarItensCompra = () => {
         itensCompraUL.innerHTML = '';
         if (itensAtivos.length === 0) {
-            const li = document.createElement('li');
-            li.innerHTML = '<span style="color: #6c757d; font-style: italic;">Sua lista de compras está vazia.</span>';
-            itensCompraUL.appendChild(li);
+            itensCompraUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Sua lista de compras está vazia.</li>';
         } else {
             itensAtivos.forEach(item => {
                 const subtotal = (item.valor_unitario || 0) * (item.quantidade || 0);
@@ -175,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="item-inputs">
                         <input type="number" class="valor-input" placeholder="R$" step="0.01" value="${item.valor_unitario || ''}" data-id="${item.id}">
                         <span>x</span>
-                        <input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || ''}" data-id="${item.id}">
+                        <input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || 1}" data-id="${item.id}">
                     </div>
                     <span class="item-total">R$ ${subtotal.toFixed(2)}</span>
                 `;
@@ -186,10 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     const renderizarTotais = () => {
-        let totalCompra = 0;
-        itensAtivos.forEach(item => {
-            totalCompra += (item.valor_unitario || 0) * (item.quantidade || 0);
-        });
+        const totalCompra = itensAtivos.reduce((acc, item) => acc + (item.valor_unitario || 0) * (item.quantidade || 0), 0);
         totalCompraSpan.textContent = totalCompra.toFixed(2);
     };
 
@@ -224,8 +220,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') adicionarItemEmCompra(listaAtivaId, novoItemCompraInput.value);
     });
 
-    voltarBtn.addEventListener('click', () => mostrarManager());
-    voltarCompraBtn.addEventListener('click', () => mostrarManager());
+    voltarBtn.addEventListener('click', mostrarManager);
+    voltarCompraBtn.addEventListener('click', mostrarManager);
 
     iniciarCompraBtn.addEventListener('click', async () => {
         await carregarItensDaLista(listaAtivaId);
@@ -236,12 +232,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = e.target;
         if (input.classList.contains('valor-input') || input.classList.contains('quantidade-input')) {
             const id = input.dataset.id;
-            const valorInput = input.closest('li').querySelector('.valor-input');
-            const quantidadeInput = input.closest('li').querySelector('.quantidade-input');
+            const li = input.closest('li');
+            const valorInput = li.querySelector('.valor-input');
+            const quantidadeInput = li.querySelector('.quantidade-input');
+            const totalSpan = li.querySelector('.item-total');
 
             const valor = parseFloat(valorInput.value) || 0;
             const quantidade = parseInt(quantidadeInput.value) || 0;
 
+            totalSpan.textContent = `R$ ${(valor * quantidade).toFixed(2)}`;
             atualizarItem(id, valor, quantidade);
         }
     });

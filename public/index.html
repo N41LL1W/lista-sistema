@@ -7,27 +7,9 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Vista Principal: Gerenciador de Listas -->
     <div class="container" id="lista-manager">
         <h1>Gerenciar Listas</h1>
-        
-        <div class="container" id="modo-compra" style="display: none;">
-            <h1 id="compra-titulo"></h1>
-            
-            <div class="add-item-container">
-                <input type="text" id="novo-item-compra" placeholder="Adicionar novo item...">
-                <button id="adicionar-item-compra-btn">Adicionar</button>
-            </div>
-            <div class="lista-container">
-                <ul id="itens-compra">
-                    </ul>
-            </div>
-            <div class="total-container">
-                <h3>Total da Compra: R$ <span id="total-compra">0.00</span></h3>
-            </div>
-            <div class="acoes-container">
-                <button id="voltar-compra-btn">Voltar</button>
-            </div>
-        </div>
         
         <div class="criar-lista-container">
             <input type="text" id="nova-lista-nome" placeholder="Nome da nova lista...">
@@ -37,10 +19,12 @@
         <div class="listas-salvas">
             <h2>Listas Salvas</h2>
             <ul id="listas-salvas-ul">
-                </ul>
+                <!-- Listas salvas serão carregadas aqui -->
+            </ul>
         </div>
     </div>
 
+    <!-- Vista de Edição de Lista -->
     <div class="container" id="lista-editor" style="display: none;">
         <h1 id="lista-titulo"></h1>
         <div class="add-item-container">
@@ -48,8 +32,7 @@
             <button id="adicionar-item-lista-btn">Adicionar</button>
         </div>
         <div class="lista-container">
-            <ul id="itens-lista">
-                </ul>
+            <ul id="itens-lista"></ul>
         </div>
         <div class="acoes-container">
             <button id="voltar-btn">Voltar para Listas</button>
@@ -57,11 +40,17 @@
         </div>
     </div>
     
+    <!-- Vista de Modo de Compra (CORRIGIDA) -->
     <div class="container" id="modo-compra" style="display: none;">
         <h1 id="compra-titulo"></h1>
+
+        <div class="add-item-container">
+            <input type="text" id="novo-item-compra" placeholder="Adicionar item de última hora...">
+            <button id="adicionar-item-compra-btn">Adicionar</button>
+        </div>
+
         <div class="lista-container">
-            <ul id="itens-compra">
-                </ul>
+            <ul id="itens-compra"></ul>
         </div>
         <div class="total-container">
             <h3>Total da Compra: R$ <span id="total-compra">0.00</span></h3>
