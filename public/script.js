@@ -55,50 +55,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Funções de Lógica do Backend ---
     const carregarListas = async () => {
-        const response = await fetch('/api/listas');
-        const listas = await response.json();
-        listasSalvasUL.innerHTML = '';
-        listas.forEach(lista => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <span>${lista.nome_lista}</span>
-                <button class="abrir-lista-btn" data-id="${lista.id}" data-nome="${lista.nome_lista}">Abrir</button>
-            `;
-            listasSalvasUL.appendChild(li);
-        });
+        try {
+            const response = await fetch('/api/listas');
+            if (!response.ok) throw new Error('Erro ao carregar listas');
+            const listas = await response.json();
+            listasSalvasUL.innerHTML = '';
+            listas.forEach(lista => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span>${lista.nome_lista}</span>
+                    <button class="abrir-lista-btn" data-id="${lista.id}" data-nome="${lista.nome_lista}">Abrir</button>
+                `;
+                listasSalvasUL.appendChild(li);
+            });
+        } catch (error) {
+            console.error("Erro ao carregar listas:", error);
+            listasSalvasUL.innerHTML = '<li>Não foi possível carregar as listas. Tente novamente.</li>';
+        }
     };
 
     const carregarItensDaLista = async (listaId) => {
-        const response = await fetch(`/api/listas/${listaId}/itens`);
-        itensAtivos = await response.json();
-        renderizarItensLista();
+        try {
+            const response = await fetch(`/api/listas/${listaId}/itens`);
+            if (!response.ok) throw new Error('Erro ao carregar itens');
+            itensAtivos = await response.json();
+            renderizarItensLista();
+        } catch (error) {
+            console.error("Erro ao carregar itens da lista:", error);
+            itensAtivos = [];
+            renderizarItensLista();
+        }
     };
 
     const adicionarItem = async (listaId, nomeItem) => {
         if (!nomeItem.trim()) return;
-        const response = await fetch(`/api/listas/${listaId}/itens`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome_item: nomeItem }),
-        });
-        if (response.ok) {
-            novoItemListaInput.value = '';
-            carregarItensDaLista(listaId);
+        try {
+            const response = await fetch(`/api/listas/${listaId}/itens`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome_item: nomeItem }),
+            });
+            if (response.ok) {
+                novoItemListaInput.value = '';
+                await carregarItensDaLista(listaId);
+            }
+        } catch (error) {
+            console.error("Erro ao adicionar item:", error);
         }
     };
 
     const adicionarItemEmCompra = async (listaId, nomeItem) => {
         if (!nomeItem.trim()) return;
-        const response = await fetch(`/api/listas/${listaId}/itens`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome_item: nomeItem }),
-        });
-        if (response.ok) {
-            novoItemCompraInput.value = '';
-            const novosItens = await response.json();
-            itensAtivos.push(novosItens);
-            renderizarItensCompra();
+        try {
+            const response = await fetch(`/api/listas/${listaId}/itens`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome_item: nomeItem }),
+            });
+            if (response.ok) {
+                novoItemCompraInput.value = '';
+                const novosItens = await response.json();
+                itensAtivos.push(novosItens);
+                renderizarItensCompra();
+            }
+        } catch (error) {
+            console.error("Erro ao adicionar item em compra:", error);
         }
     };
 
@@ -109,11 +130,15 @@ document.addEventListener('DOMContentLoaded', () => {
             itensAtivos[itemIndex].quantidade = quantidade;
             renderizarTotais();
         }
-        await fetch(`/api/itens/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ valor_unitario: valor, quantidade: quantidade, comprado: false }),
-        });
+        try {
+            await fetch(`/api/itens/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ valor_unitario: valor, quantidade: quantidade, comprado: false }),
+            });
+        } catch (error) {
+            console.error("Erro ao atualizar item:", error);
+        }
     };
 
     // --- Funções de Renderização ---
@@ -166,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
             totalCompra += (item.valor_unitario || 0) * (item.quantidade || 0);
         });
         totalCompraSpan.textContent = totalCompra.toFixed(2);
-    }
+    };
 
     // --- Event Listeners ---
     criarListaBtn.addEventListener('click', async () => {
@@ -203,7 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
     voltarCompraBtn.addEventListener('click', () => mostrarManager());
 
     iniciarCompraBtn.addEventListener('click', async () => {
-        // Recarrega os itens da lista ativa para garantir que estão atualizados
         await carregarItensDaLista(listaAtivaId);
         mostrarCompra(listaTitulo.textContent.replace('Lista: ', ''));
     });
