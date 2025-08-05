@@ -152,3 +152,53 @@ button:hover {
     flex-grow: 1;
     margin: 0 5px;
 }
+
+.item-editavel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e2e6ea;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.deletar-item-btn {
+    background-color: #dc3545; 
+    color: white;
+    padding: 8px 12px;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.deletar-item-btn:hover {
+    background-color: #c82333;
+}
+
+/* --- NOVOS ESTILOS PARA LISTA DE LISTAS --- */
+.nome-lista-salva {
+    flex-grow: 1; /* Faz o nome da lista ocupar o espaço disponível */
+    font-weight: bold;
+}
+
+.botoes-lista {
+    display: flex;
+    gap: 10px; /* Espaço entre os botões Abrir e Deletar */
+    flex-shrink: 0; /* Impede que a div dos botões encolha */
+}
+
+.deletar-lista-btn {
+    background-color: #dc3545; /* Vermelho */
+    padding: 10px 15px;
+    font-size: 14px;
+}
+
+.deletar-lista-btn:hover {
+    background-color: #c82333; /* Vermelho mais escuro */
+}
+
+.abrir-lista-btn {
+    padding: 10px 15px;
+    font-size: 14px;
+}

@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Funções de Lógica do Backend ---
+    // --- ATUALIZADO: carregarListas com botão de deletar ---
     const carregarListas = async () => {
         try {
             const response = await fetch('/api/listas');
@@ -63,8 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
             listas.forEach(lista => {
                 const li = document.createElement('li');
                 li.innerHTML = `
-                    <span>${lista.nome_lista}</span>
-                    <button class="abrir-lista-btn" data-id="${lista.id}" data-nome="${lista.nome_lista}">Abrir</button>
+                    <span class="nome-lista-salva">${lista.nome_lista}</span>
+                    <div class="botoes-lista">
+                        <button class="abrir-lista-btn" data-id="${lista.id}" data-nome="${lista.nome_lista}">Abrir</button>
+                        <button class="deletar-lista-btn" data-id="${lista.id}">Deletar</button>
+                    </div>
                 `;
                 listasSalvasUL.appendChild(li);
             });
@@ -141,17 +145,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- NOVO: Função para deletar um item ---
     const deletarItem = async (itemId) => {
         try {
             const response = await fetch(`/api/itens/${itemId}`, {
                 method: 'DELETE',
             });
             if (response.ok) {
-                // Recarrega os itens da lista para refletir a exclusão
                 await carregarItensDaLista(listaAtivaId);
             } else {
-                console.error("Falha ao deletar o item.");
                 alert("Não foi possível deletar o item. Tente novamente.");
             }
         } catch (error) {
@@ -159,8 +160,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- NOVO: Função para deletar uma lista ---
+    const deletarLista = async (listaId) => {
+        try {
+            const response = await fetch(`/api/listas/${listaId}`, {
+                method: 'DELETE',
+            });
+            if (response.ok) {
+                await carregarListas();
+            } else {
+                alert("Não foi possível deletar a lista. Tente novamente.");
+            }
+        } catch (error) {
+            console.error("Erro ao deletar lista:", error);
+        }
+    };
+
     // --- Funções de Renderização ---
-    // --- ATUALIZADO: renderizarItensLista com botão de deletar ---
     const renderizarItensLista = () => {
         itensListaUL.innerHTML = '';
         if (itensAtivos.length === 0) {
@@ -224,15 +240,21 @@ document.addEventListener('DOMContentLoaded', () => {
         carregarListas();
     });
 
+    // --- ATUALIZADO: Event Listener para abrir ou deletar uma lista ---
     listasSalvasUL.addEventListener('click', (e) => {
-        if (e.target.classList.contains('abrir-lista-btn')) {
-            const listaId = e.target.dataset.id;
-            const nomeLista = e.target.dataset.nome;
+        const target = e.target;
+        if (target.classList.contains('abrir-lista-btn')) {
+            const listaId = target.dataset.id;
+            const nomeLista = target.dataset.nome;
             mostrarEditor(listaId, nomeLista);
+        } else if (target.classList.contains('deletar-lista-btn')) {
+            const listaId = target.dataset.id;
+            if (confirm('Tem certeza que deseja deletar esta lista e todos os seus itens? Esta ação não pode ser desfeita.')) {
+                deletarLista(listaId);
+            }
         }
     });
 
-    // --- NOVO: Event Listener para o botão de deletar item ---
     itensListaUL.addEventListener('click', (e) => {
         if (e.target.classList.contains('deletar-item-btn')) {
             const itemId = e.target.dataset.id;

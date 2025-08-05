@@ -83,7 +83,7 @@ app.put('/api/itens/:itemId', async (req, res) => {
     }
 });
 
-// --- NOVO: Rota para deletar um item específico ---
+// Rota para deletar um item específico
 app.delete('/api/itens/:itemId', async (req, res) => {
     const { itemId } = req.params;
     try {
@@ -92,13 +92,40 @@ app.delete('/api/itens/:itemId', async (req, res) => {
         if (result.rowCount === 0) {
             return res.status(404).json({ message: 'Item não encontrado.' });
         }
-        res.status(204).send(); // 204 No Content -> sucesso, sem conteúdo para retornar
+        res.status(204).send();
     } catch (err) {
         console.error('Erro ao deletar item:', err);
         res.status(500).json({ message: 'Erro ao deletar item.', error: err.message });
     }
 });
 
+// --- NOVO: Rota para deletar uma lista e todos os seus itens ---
+app.delete('/api/listas/:listaId', async (req, res) => {
+    const { listaId } = req.params;
+    const client = await pool.connect(); // Pega uma conexão do pool para transação
+    try {
+        await client.query('BEGIN'); // Inicia uma transação
+        
+        // 1. Deleta todos os itens associados à lista
+        await client.query('DELETE FROM itens_lista WHERE lista_id = $1', [listaId]);
+        
+        // 2. Deleta a lista principal
+        const result = await client.query('DELETE FROM listas WHERE id = $1', [listaId]);
+        
+        await client.query('COMMIT'); // Confirma a transação
+        
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Lista não encontrada.' });
+        }
+        res.status(204).send(); // Sucesso
+    } catch (err) {
+        await client.query('ROLLBACK'); // Desfaz a transação em caso de erro
+        console.error('Erro ao deletar lista:', err);
+        res.status(500).json({ message: 'Erro ao deletar lista.', error: err.message });
+    } finally {
+        client.release(); // Libera a conexão de volta para o pool
+    }
+});
 
 // Inicia o servidor
 app.listen(port, () => {
