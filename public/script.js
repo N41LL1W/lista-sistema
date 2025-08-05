@@ -114,10 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (response.ok) {
                 novoItemCompraInput.value = '';
-                // CORREÇÃO: A API retorna um objeto único, não um array.
                 const novoItem = await response.json();
-                itensAtivos.push(novoItem); // Adiciona o novo item ao array local
-                renderizarItensCompra(); // Renderiza a lista atualizada
+                itensAtivos.push(novoItem);
+                renderizarItensCompra();
             }
         } catch (error) {
             console.error("Erro ao adicionar item em compra:", error);
@@ -129,10 +128,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (itemIndex > -1) {
             itensAtivos[itemIndex].valor_unitario = valor;
             itensAtivos[itemIndex].quantidade = quantidade;
-            renderizarTotais(); // Apenas atualiza o total na tela para resposta rápida
+            renderizarTotais();
         }
         try {
-            // Atualiza o banco de dados em segundo plano
             await fetch(`/api/itens/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -140,20 +138,44 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) {
             console.error("Erro ao atualizar item:", error);
-            // Opcional: Reverter a mudança visual se a atualização falhar
+        }
+    };
+
+    // --- NOVO: Função para deletar um item ---
+    const deletarItem = async (itemId) => {
+        try {
+            const response = await fetch(`/api/itens/${itemId}`, {
+                method: 'DELETE',
+            });
+            if (response.ok) {
+                // Recarrega os itens da lista para refletir a exclusão
+                await carregarItensDaLista(listaAtivaId);
+            } else {
+                console.error("Falha ao deletar o item.");
+                alert("Não foi possível deletar o item. Tente novamente.");
+            }
+        } catch (error) {
+            console.error("Erro ao deletar item:", error);
         }
     };
 
     // --- Funções de Renderização ---
+    // --- ATUALIZADO: renderizarItensLista com botão de deletar ---
     const renderizarItensLista = () => {
         itensListaUL.innerHTML = '';
         if (itensAtivos.length === 0) {
-            itensListaUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Adicione itens a esta lista.</li>';
+            const li = document.createElement('li');
+            li.innerHTML = '<span style="color: #6c757d; font-style: italic;">Adicione itens a esta lista.</span>';
+            itensListaUL.appendChild(li);
             iniciarCompraBtn.disabled = true;
         } else {
             itensAtivos.forEach(item => {
                 const li = document.createElement('li');
-                li.innerHTML = `<span>${item.nome_item}</span>`;
+                li.className = 'item-editavel'; 
+                li.innerHTML = `
+                    <span>${item.nome_item}</span>
+                    <button class="deletar-item-btn" data-id="${item.id}">Deletar</button>
+                `;
                 itensListaUL.appendChild(li);
             });
             iniciarCompraBtn.disabled = false;
@@ -207,6 +229,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const listaId = e.target.dataset.id;
             const nomeLista = e.target.dataset.nome;
             mostrarEditor(listaId, nomeLista);
+        }
+    });
+
+    // --- NOVO: Event Listener para o botão de deletar item ---
+    itensListaUL.addEventListener('click', (e) => {
+        if (e.target.classList.contains('deletar-item-btn')) {
+            const itemId = e.target.dataset.id;
+            if (confirm('Tem certeza que deseja deletar este item?')) {
+                deletarItem(itemId);
+            }
         }
     });
 

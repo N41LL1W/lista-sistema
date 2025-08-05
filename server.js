@@ -65,7 +65,7 @@ app.get('/api/listas/:listaId/itens', async (req, res) => {
     }
 });
 
-// Rota para atualizar o valor e a quantidade de um item na lista de compras
+// Rota para atualizar o valor e a quantidade de um item
 app.put('/api/itens/:itemId', async (req, res) => {
     const { itemId } = req.params;
     const { valor_unitario, quantidade, comprado } = req.body;
@@ -82,6 +82,23 @@ app.put('/api/itens/:itemId', async (req, res) => {
         res.status(500).json({ message: 'Erro ao atualizar item.', error: err.message });
     }
 });
+
+// --- NOVO: Rota para deletar um item específico ---
+app.delete('/api/itens/:itemId', async (req, res) => {
+    const { itemId } = req.params;
+    try {
+        const query = 'DELETE FROM itens_lista WHERE id = $1';
+        const result = await pool.query(query, [itemId]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Item não encontrado.' });
+        }
+        res.status(204).send(); // 204 No Content -> sucesso, sem conteúdo para retornar
+    } catch (err) {
+        console.error('Erro ao deletar item:', err);
+        res.status(500).json({ message: 'Erro ao deletar item.', error: err.message });
+    }
+});
+
 
 // Inicia o servidor
 app.listen(port, () => {
