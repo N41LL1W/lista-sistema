@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Referências das seções e elementos
+    // Referências de Elementos
     const listaManager = document.getElementById('lista-manager');
     const listaEditor = document.getElementById('lista-editor');
     const modoCompra = document.getElementById('modo-compra');
@@ -18,11 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const itensCompraUL = document.getElementById('itens-compra');
     const voltarCompraBtn = document.getElementById('voltar-compra-btn');
     const resetCompraBtn = document.getElementById('reset-compra-btn');
+    const loader = document.getElementById('loader');
 
+    // Variáveis de Estado
     let listaAtivaId = null;
     let itensAtivos = [];
 
-    // --- Funções de Navegação ---
+    // --- Funções de Controle de UI ---
+    const mostrarLoader = () => loader.style.display = 'flex';
+    const esconderLoader = () => loader.style.display = 'none';
+
     const mostrarManager = () => {
         listaManager.style.display = 'block';
         listaEditor.style.display = 'none';
@@ -47,8 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderizarItensCompra();
     };
 
-    // --- Funções de Lógica ---
+    // --- Funções de Lógica e API ---
     const carregarListas = async () => {
+        mostrarLoader();
         try {
             const response = await fetch('/api/listas');
             const listas = await response.json();
@@ -60,16 +66,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="botoes-lista">
                         <button class="abrir-lista-btn" data-id="${lista.id}" data-nome="${lista.nome_lista}">Abrir</button>
                         <button class="deletar-lista-btn" data-id="${lista.id}">Deletar</button>
-                    </div>
-                `;
+                    </div>`;
                 listasSalvasUL.appendChild(li);
             });
         } catch (error) {
             console.error("Erro ao carregar listas:", error);
+        } finally {
+            esconderLoader();
         }
     };
 
     const carregarItensDaLista = async (listaId) => {
+        mostrarLoader();
         try {
             const response = await fetch(`/api/listas/${listaId}/itens`);
             const itens = await response.json();
@@ -77,77 +85,23 @@ document.addEventListener('DOMContentLoaded', () => {
             renderizarItensLista();
         } catch (error) {
             console.error("Erro ao carregar itens da lista:", error);
+        } finally {
+            esconderLoader();
         }
     };
-
-    const adicionarItem = async (listaId, nomeItem) => {
-        if (!nomeItem.trim()) return;
+    
+    const executarAcaoBackend = async (acao) => {
+        mostrarLoader();
         try {
-            const response = await fetch(`/api/listas/${listaId}/itens`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome_item: nomeItem }),
-            });
-            if (response.ok) {
-                novoItemListaInput.value = '';
-                await carregarItensDaLista(listaId);
-            }
-        } catch (error) { console.error("Erro ao adicionar item:", error); }
-    };
-
-    const adicionarItemEmCompra = async (listaId, nomeItem) => {
-        if (!nomeItem.trim()) return;
-        try {
-            const response = await fetch(`/api/listas/${listaId}/itens`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome_item: nomeItem }),
-            });
-            if (response.ok) {
-                novoItemCompraInput.value = '';
-                const novoItem = await response.json();
-                itensAtivos.push({...novoItem, comprado: false});
-                renderizarItensCompra();
-            }
-        } catch (error) { console.error("Erro ao adicionar item em compra:", error); }
-    };
-
-    const atualizarItem = async (id, valor, quantidade, comprado) => {
-        try {
-            await fetch(`/api/itens/${id}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ valor_unitario: valor, quantidade: quantidade, comprado: comprado }),
-            });
-        } catch (error) { console.error("Erro ao atualizar item:", error); }
-    };
-
-    const deletarItem = async (itemId) => {
-        try {
-            const response = await fetch(`/api/itens/${itemId}`, { method: 'DELETE' });
-            if (response.ok) await carregarItensDaLista(listaAtivaId);
-        } catch (error) { console.error("Erro ao deletar item:", error); }
-    };
-
-    const deletarLista = async (listaId) => {
-        try {
-            const response = await fetch(`/api/listas/${listaId}`, { method: 'DELETE' });
-            if (response.ok) await carregarListas();
-        } catch (error) { console.error("Erro ao deletar lista:", error); }
-    };
-
-    // --- NOVO: Função para resetar a compra ---
-    const resetarCompra = async (listaId) => {
-        try {
-            const response = await fetch(`/api/listas/${listaId}/reset`, { method: 'PUT' });
-            if (response.ok) {
-                itensAtivos = await response.json();
-                renderizarItensCompra();
-            } else {
-                alert('Não foi possível limpar a compra. Tente novamente.');
-            }
+            await acao();
         } catch (error) {
-            console.error('Erro ao resetar compra:', error);
+            console.error("Erro na ação de backend:", error);
+            alert("Ocorreu um erro. Tente novamente.");
+        } finally {
+            esconderLoader();
         }
     };
-
+    
     // --- Funções de Renderização ---
     const renderizarItensLista = () => {
         itensListaUL.innerHTML = '';
@@ -164,7 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ATUALIZADO: Com ordenação automática
     const renderizarItensCompra = () => {
         itensAtivos.sort((a, b) => a.comprado - b.comprado);
         itensCompraUL.innerHTML = '';
@@ -177,16 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.className = `lista-item ${item.comprado ? 'comprado' : ''}`;
                 li.dataset.id = item.id;
                 li.innerHTML = `
-                    <div class="item-info">
-                        <input type="checkbox" class="item-checkbox" ${item.comprado ? 'checked' : ''}>
-                        <span class="item-nome">${item.nome_item}</span>
-                    </div>
+                    <div class="item-info"><input type="checkbox" class="item-checkbox" ${item.comprado ? 'checked' : ''}><span class="item-nome">${item.nome_item}</span></div>
                     <div class="item-detalhes">
-                        <div class="item-inputs">
-                            <input type="number" class="valor-input" placeholder="R$" step="0.01" value="${item.valor_unitario || ''}">
-                            <span>x</span>
-                            <input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || 1}">
-                        </div>
+                        <div class="item-inputs"><input type="number" class="valor-input" placeholder="R$" step="0.01" value="${item.valor_unitario || ''}"><span>x</span><input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || 1}"></div>
                         <span class="item-total">R$ ${subtotal.toFixed(2)}</span>
                     </div>`;
                 itensCompraUL.appendChild(li);
@@ -203,60 +149,125 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Event Listeners ---
-    criarListaBtn.addEventListener('click', () => adicionarItem(listaAtivaId, novaListaNomeInput.value));
+    criarListaBtn.addEventListener('click', () => executarAcaoBackend(async () => {
+        await fetch('/api/listas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_lista: novaListaNomeInput.value }) });
+        novaListaNomeInput.value = '';
+        await carregarListas();
+    }));
+
     listasSalvasUL.addEventListener('click', (e) => {
         const target = e.target;
         if (target.classList.contains('abrir-lista-btn')) mostrarEditor(target.dataset.id, target.dataset.nome);
-        else if (target.classList.contains('deletar-lista-btn') && confirm('Deletar esta lista e todos os seus itens?')) deletarLista(target.dataset.id);
-    });
-    itensListaUL.addEventListener('click', (e) => {
-        if (e.target.classList.contains('deletar-item-btn') && confirm('Deletar este item?')) deletarItem(e.target.dataset.id);
-    });
-    adicionarItemListaBtn.addEventListener('click', () => adicionarItem(listaAtivaId, novoItemListaInput.value));
-    adicionarItemCompraBtn.addEventListener('click', () => adicionarItemEmCompra(listaAtivaId, novoItemCompraInput.value));
-    voltarBtn.addEventListener('click', mostrarManager);
-    voltarCompraBtn.addEventListener('click', mostrarManager);
-    iniciarCompraBtn.addEventListener('click', async () => {
-        await carregarItensDaLista(listaAtivaId);
-        mostrarCompra(listaTitulo.textContent.replace('Lista: ', ''));
+        else if (target.classList.contains('deletar-lista-btn') && confirm('Deletar esta lista e todos os seus itens?')) {
+            executarAcaoBackend(async () => {
+                await fetch(`/api/listas/${target.dataset.id}`, { method: 'DELETE' });
+                await carregarListas();
+            });
+        }
     });
 
-    // ATUALIZADO: Com lógica de re-renderização para ordenação
+    listasSalvasUL.addEventListener('dblclick', (e) => {
+        const span = e.target;
+        if (span.classList.contains('nome-lista-salva')) {
+            const li = span.closest('li');
+            const listaId = li.querySelector('.abrir-lista-btn').dataset.id;
+            const nomeAtual = span.textContent;
+            const input = document.createElement('input');
+            input.type = 'text'; input.value = nomeAtual; input.className = 'input-editavel';
+            span.replaceWith(input); input.focus();
+            const salvar = () => {
+                const novoNome = input.value.trim();
+                if (novoNome && novoNome !== nomeAtual) {
+                    executarAcaoBackend(async () => {
+                        await fetch(`/api/listas/${listaId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_lista: novoNome }) });
+                        span.textContent = novoNome;
+                        li.querySelector('.abrir-lista-btn').dataset.nome = novoNome;
+                        input.replaceWith(span);
+                    });
+                } else { input.replaceWith(span); }
+            };
+            input.addEventListener('blur', salvar);
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') input.replaceWith(span); });
+        }
+    });
+
+    itensListaUL.addEventListener('click', (e) => {
+        if (e.target.classList.contains('deletar-item-btn') && confirm('Deletar este item?')) {
+            executarAcaoBackend(async () => {
+                await fetch(`/api/itens/${e.target.dataset.id}`, { method: 'DELETE' });
+                await carregarItensDaLista(listaAtivaId);
+            });
+        }
+    });
+
+    itensListaUL.addEventListener('dblclick', (e) => {
+        const span = e.target;
+        if (span.tagName === 'SPAN' && span.closest('.item-editavel')) {
+            const li = span.closest('.item-editavel');
+            const itemId = li.querySelector('.deletar-item-btn').dataset.id;
+            const nomeAtual = span.textContent;
+            const input = document.createElement('input');
+            input.type = 'text'; input.value = nomeAtual; input.className = 'input-editavel';
+            span.replaceWith(input); input.focus();
+            const salvar = () => {
+                const novoNome = input.value.trim();
+                if (novoNome && novoNome !== nomeAtual) {
+                    executarAcaoBackend(async () => {
+                        await fetch(`/api/itens/${itemId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_item: novoNome }) });
+                        span.textContent = novoNome;
+                        input.replaceWith(span);
+                    });
+                } else { input.replaceWith(span); }
+            };
+            input.addEventListener('blur', salvar);
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') input.replaceWith(span); });
+        }
+    });
+
+    adicionarItemListaBtn.addEventListener('click', () => executarAcaoBackend(async () => {
+        await fetch(`/api/listas/${listaAtivaId}/itens`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_item: novoItemListaInput.value }) });
+        novoItemListaInput.value = '';
+        await carregarItensDaLista(listaAtivaId);
+    }));
+
+    adicionarItemCompraBtn.addEventListener('click', () => executarAcaoBackend(async () => {
+        const response = await fetch(`/api/listas/${listaAtivaId}/itens`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_item: novoItemCompraInput.value }) });
+        const novoItem = await response.json();
+        itensAtivos.push({...novoItem, comprado: false});
+        novoItemCompraInput.value = '';
+        renderizarItensCompra();
+    }));
+
     itensCompraUL.addEventListener('change', (e) => {
-        const target = e.target;
-        const li = target.closest('li');
+        const li = e.target.closest('li');
         if (!li) return;
-        
         const id = li.dataset.id;
         const valor = parseFloat(li.querySelector('.valor-input').value) || 0;
         const quantidade = parseInt(li.querySelector('.quantidade-input').value) || 1;
         const comprado = li.querySelector('.item-checkbox').checked;
-
         const itemIndex = itensAtivos.findIndex(item => item.id == id);
-        if (itemIndex > -1) {
-            itensAtivos[itemIndex] = { ...itensAtivos[itemIndex], valor_unitario: valor, quantidade, comprado };
-        }
-
-        if (target.classList.contains('item-checkbox')) {
-            renderizarItensCompra();
-        } else {
-            li.querySelector('.item-total').textContent = `R$ ${(valor * quantidade).toFixed(2)}`;
-            renderizarTotais();
-        }
-        
-        atualizarItem(id, valor, quantidade, comprado);
+        if (itemIndex > -1) itensAtivos[itemIndex] = { ...itensAtivos[itemIndex], valor_unitario: valor, quantidade, comprado };
+        if (e.target.classList.contains('item-checkbox')) renderizarItensCompra();
+        else { li.querySelector('.item-total').textContent = `R$ ${(valor * quantidade).toFixed(2)}`; renderizarTotais(); }
+        fetch(`/api/itens/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ valor_unitario: valor, quantidade, comprado }) });
     });
-    
-    // NOVO: Event listener para o botão de reset
+
     resetCompraBtn.addEventListener('click', () => {
         if (confirm('Isso irá limpar todos os preços, quantidades e marcações desta compra. Deseja continuar?')) {
-            resetarCompra(listaAtivaId);
+            executarAcaoBackend(async () => {
+                const response = await fetch(`/api/listas/${listaAtivaId}/reset`, { method: 'PUT' });
+                itensAtivos = await response.json();
+                renderizarItensCompra();
+            });
         }
     });
 
-    // Listeners de 'Enter'
-    novoItemListaInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') adicionarItem(listaAtivaId, novoItemListaInput.value); });
-    novoItemCompraInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') adicionarItemEmCompra(listaAtivaId, novoItemCompraInput.value); });
+    voltarBtn.addEventListener('click', mostrarManager);
+    voltarCompraBtn.addEventListener('click', mostrarManager);
+    iniciarCompraBtn.addEventListener('click', () => mostrarCompra(listaTitulo.textContent.replace('Lista: ', '')));
+    novoItemListaInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') adicionarItemListaBtn.click(); });
+    novoItemCompraInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') adicionarItemCompraBtn.click(); });
 
+    // Iniciar
     mostrarManager();
 });

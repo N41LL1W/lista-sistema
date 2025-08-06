@@ -101,141 +101,84 @@ button:hover {
     color: #555;
     font-size: 1.1em;
     transition: color 0.3s, text-decoration 0.3s;
+    cursor: text;
 }
 
-.item-inputs {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.item-inputs input {
-    width: 80px;
-    padding: 8px;
-    font-size: 14px;
-}
-
-.item-total {
-    font-weight: bold;
-    color: #28a745;
-    min-width: 80px;
-    text-align: right;
-    font-size: 1.1em;
-}
+.item-inputs { display: flex; gap: 10px; align-items: center; }
+.item-inputs input { width: 80px; padding: 8px; font-size: 14px; }
+.item-total { font-weight: bold; color: #28a745; min-width: 80px; text-align: right; font-size: 1.1em; }
 
 .total-container {
-    margin-top: 25px;
-    padding: 20px;
+    margin-top: 25px; padding: 20px;
     background-color: #e2f0ff;
-    border-radius: 8px;
-    text-align: right;
+    border-radius: 8px; text-align: right;
 }
 
-.acoes-container {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 20px;
-    gap: 10px;
-}
-
-.acoes-container button {
-    flex-grow: 1;
-    margin: 0;
-}
+.acoes-container { display: flex; justify-content: space-between; margin-top: 20px; gap: 10px; }
+.acoes-container button { flex-grow: 1; margin: 0; }
 
 .item-editavel {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border: 1px solid #e2e6ea;
-    border-radius: 8px;
-    margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px; background-color: #f8f9fa;
+    border: 1px solid #e2e6ea; border-radius: 8px; margin-bottom: 10px;
 }
 
-.deletar-item-btn, .deletar-lista-btn {
-    background-color: #dc3545; 
-    color: white;
-    flex-shrink: 0;
-}
-.deletar-item-btn:hover, .deletar-lista-btn:hover {
-    background-color: #c82333;
-}
+.item-editavel span { flex-grow: 1; cursor: text; }
+
+.deletar-item-btn, .deletar-lista-btn { background-color: #dc3545; color: white; flex-shrink: 0; }
+.deletar-item-btn:hover, .deletar-lista-btn:hover { background-color: #c82333; }
 .deletar-item-btn { padding: 8px 12px; font-size: 14px; }
 .deletar-lista-btn { padding: 10px 15px; font-size: 14px; }
 
+.nome-lista-salva { flex-grow: 1; font-weight: bold; cursor: text; }
+.botoes-lista { display: flex; gap: 10px; flex-shrink: 0; }
+.abrir-lista-btn { padding: 10px 15px; font-size: 14px; }
 
-.nome-lista-salva {
-    flex-grow: 1;
-    font-weight: bold;
-}
+.lista-item .item-info { display: flex; align-items: center; gap: 15px; flex-grow: 1; }
+.lista-item .item-detalhes { display: flex; align-items: center; gap: 15px; }
+.item-checkbox { width: 20px; height: 20px; flex-shrink: 0; cursor: pointer; }
 
-.botoes-lista {
-    display: flex;
-    gap: 10px;
-    flex-shrink: 0;
-}
+.lista-item.comprado { background-color: #f0f0f0; opacity: 0.7; }
+.lista-item.comprado .item-nome { text-decoration: line-through; color: #888; }
 
-.abrir-lista-btn {
-    padding: 10px 15px;
-    font-size: 14px;
-}
-
-.lista-item .item-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-grow: 1;
-}
-
-.lista-item .item-detalhes {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.item-checkbox {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    cursor: pointer;
-}
-
-.lista-item.comprado {
-    background-color: #f0f0f0;
-    opacity: 0.7;
-}
-
-.lista-item.comprado .item-nome {
-    text-decoration: line-through;
-    color: #888;
-}
-
-.total-container h4 {
-    margin: 0 0 10px 0;
-    color: #555;
-    font-weight: normal;
-}
+.total-container h4 { margin: 0 0 10px 0; color: #555; font-weight: normal; }
 .total-container h3 { margin: 0; }
+#total-carrinho { font-weight: bold; color: #28a745; font-size: 1.2em; }
+#total-lista { font-size: 1.2em; color: #007bff; }
 
-#total-carrinho {
+.btn-secundario { background-color: #6c757d; }
+.btn-secundario:hover { background-color: #5a6268; }
+
+/* --- NOVOS ESTILOS --- */
+.input-editavel {
+    font-size: 1em;
     font-weight: bold;
-    color: #28a745;
-    font-size: 1.2em;
+    padding: 5px;
+    border: 1px solid #007bff;
+    border-radius: 5px;
+    width: 70%; 
 }
 
-#total-lista {
-   font-size: 1.2em;
-   color: #007bff;
+.loader-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(255, 255, 255, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
 }
 
-/* --- NOVO: ESTILO PARA BOTÃO SECUNDÁRIO --- */
-.btn-secundario {
-    background-color: #6c757d; /* Cinza */
-    color: white;
+.spinner {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #007bff;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
 }
 
-.btn-secundario:hover {
-    background-color: #5a6268;
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

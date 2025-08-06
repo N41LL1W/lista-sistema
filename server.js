@@ -14,7 +14,7 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rota para criar uma nova lista
+// --- ROTAS DE LISTAS ---
 app.post('/api/listas', async (req, res) => {
     const { nome_lista } = req.body;
     try {
@@ -27,7 +27,6 @@ app.post('/api/listas', async (req, res) => {
     }
 });
 
-// Rota para obter todas as listas
 app.get('/api/listas', async (req, res) => {
     try {
         const result = await pool.query('SELECT id, nome_lista FROM listas ORDER BY data_criacao DESC');
@@ -38,68 +37,22 @@ app.get('/api/listas', async (req, res) => {
     }
 });
 
-// Rota para adicionar um item a uma lista específica
-app.post('/api/listas/:listaId/itens', async (req, res) => {
+// --- NOVO: Rota para renomear uma lista (PATCH) ---
+app.patch('/api/listas/:listaId', async (req, res) => {
     const { listaId } = req.params;
-    const { nome_item } = req.body;
+    const { nome_lista } = req.body;
+    if (!nome_lista) return res.status(400).json({ message: 'O novo nome da lista é obrigatório.' });
     try {
-        const query = 'INSERT INTO itens_lista (lista_id, nome_item) VALUES ($1, $2) RETURNING *';
-        const result = await pool.query(query, [listaId, nome_item]);
-        res.status(201).json(result.rows[0]);
-    } catch (err) {
-        console.error('Erro ao adicionar item à lista:', err);
-        res.status(500).json({ message: 'Erro ao adicionar item à lista.', error: err.message });
-    }
-});
-
-// Rota para obter todos os itens de uma lista específica
-app.get('/api/listas/:listaId/itens', async (req, res) => {
-    const { listaId } = req.params;
-    try {
-        const query = 'SELECT * FROM itens_lista WHERE lista_id = $1 ORDER BY id';
-        const result = await pool.query(query, [listaId]);
-        res.status(200).json(result.rows);
-    } catch (err) {
-        console.error('Erro ao buscar itens da lista:', err);
-        res.status(500).json({ message: 'Erro ao buscar itens da lista.', error: err.message });
-    }
-});
-
-// Rota para atualizar o valor, quantidade e status de um item
-app.put('/api/itens/:itemId', async (req, res) => {
-    const { itemId } = req.params;
-    const { valor_unitario, quantidade, comprado } = req.body;
-    try {
-        const query = 'UPDATE itens_lista SET valor_unitario = $1, quantidade = $2, comprado = $3 WHERE id = $4 RETURNING *';
-        const values = [valor_unitario, quantidade, comprado, itemId];
-        const result = await pool.query(query, values);
-        if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'Item não encontrado.' });
-        }
+        const query = 'UPDATE listas SET nome_lista = $1 WHERE id = $2 RETURNING *';
+        const result = await pool.query(query, [nome_lista, listaId]);
+        if (result.rowCount === 0) return res.status(404).json({ message: 'Lista não encontrada.' });
         res.status(200).json(result.rows[0]);
     } catch (err) {
-        console.error('Erro ao atualizar item:', err);
-        res.status(500).json({ message: 'Erro ao atualizar item.', error: err.message });
+        console.error('Erro ao renomear lista:', err);
+        res.status(500).json({ message: 'Erro ao renomear lista.', error: err.message });
     }
 });
 
-// Rota para deletar um item específico
-app.delete('/api/itens/:itemId', async (req, res) => {
-    const { itemId } = req.params;
-    try {
-        const query = 'DELETE FROM itens_lista WHERE id = $1';
-        const result = await pool.query(query, [itemId]);
-        if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'Item não encontrado.' });
-        }
-        res.status(204).send();
-    } catch (err) {
-        console.error('Erro ao deletar item:', err);
-        res.status(500).json({ message: 'Erro ao deletar item.', error: err.message });
-    }
-});
-
-// Rota para deletar uma lista e todos os seus itens
 app.delete('/api/listas/:listaId', async (req, res) => {
     const { listaId } = req.params;
     const client = await pool.connect();
@@ -108,9 +61,7 @@ app.delete('/api/listas/:listaId', async (req, res) => {
         await client.query('DELETE FROM itens_lista WHERE lista_id = $1', [listaId]);
         const result = await client.query('DELETE FROM listas WHERE id = $1', [listaId]);
         await client.query('COMMIT');
-        if (result.rowCount === 0) {
-            return res.status(404).json({ message: 'Lista não encontrada.' });
-        }
+        if (result.rowCount === 0) return res.status(404).json({ message: 'Lista não encontrada.' });
         res.status(204).send();
     } catch (err) {
         await client.query('ROLLBACK');
@@ -121,16 +72,83 @@ app.delete('/api/listas/:listaId', async (req, res) => {
     }
 });
 
-// --- NOVO: Rota para resetar o estado de compra de todos os itens de uma lista ---
 app.put('/api/listas/:listaId/reset', async (req, res) => {
     const { listaId } = req.params;
     try {
         const query = 'UPDATE itens_lista SET comprado = false, valor_unitario = NULL, quantidade = 1 WHERE lista_id = $1 RETURNING *';
         const result = await pool.query(query, [listaId]);
-        res.status(200).json(result.rows); // Retorna os itens atualizados
+        res.status(200).json(result.rows);
     } catch (err) {
         console.error('Erro ao resetar a lista:', err);
         res.status(500).json({ message: 'Erro ao resetar a lista.', error: err.message });
+    }
+});
+
+// --- ROTAS DE ITENS ---
+app.get('/api/listas/:listaId/itens', async (req, res) => {
+    const { listaId } = req.params;
+    try {
+        const query = 'SELECT * FROM itens_lista WHERE lista_id = $1 ORDER BY id';
+        const result = await pool.query(query, [listaId]);
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Erro ao buscar itens:', err);
+        res.status(500).json({ message: 'Erro ao buscar itens.', error: err.message });
+    }
+});
+
+app.post('/api/listas/:listaId/itens', async (req, res) => {
+    const { listaId } = req.params;
+    const { nome_item } = req.body;
+    try {
+        const query = 'INSERT INTO itens_lista (lista_id, nome_item) VALUES ($1, $2) RETURNING *';
+        const result = await pool.query(query, [listaId, nome_item]);
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('Erro ao adicionar item:', err);
+        res.status(500).json({ message: 'Erro ao adicionar item.', error: err.message });
+    }
+});
+
+app.put('/api/itens/:itemId', async (req, res) => {
+    const { itemId } = req.params;
+    const { valor_unitario, quantidade, comprado } = req.body;
+    try {
+        const query = 'UPDATE itens_lista SET valor_unitario = $1, quantidade = $2, comprado = $3 WHERE id = $4 RETURNING *';
+        const result = await pool.query(query, [valor_unitario, quantidade, comprado, itemId]);
+        if (result.rowCount === 0) return res.status(404).json({ message: 'Item não encontrado.' });
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error('Erro ao atualizar item:', err);
+        res.status(500).json({ message: 'Erro ao atualizar item.', error: err.message });
+    }
+});
+
+// --- NOVO: Rota para renomear um item (PATCH) ---
+app.patch('/api/itens/:itemId', async (req, res) => {
+    const { itemId } = req.params;
+    const { nome_item } = req.body;
+    if (!nome_item) return res.status(400).json({ message: 'O novo nome do item é obrigatório.' });
+    try {
+        const query = 'UPDATE itens_lista SET nome_item = $1 WHERE id = $2 RETURNING *';
+        const result = await pool.query(query, [nome_item, itemId]);
+        if (result.rowCount === 0) return res.status(404).json({ message: 'Item não encontrado.' });
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error('Erro ao renomear item:', err);
+        res.status(500).json({ message: 'Erro ao renomear item.', error: err.message });
+    }
+});
+
+app.delete('/api/itens/:itemId', async (req, res) => {
+    const { itemId } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM itens_lista WHERE id = $1', [itemId]);
+        if (result.rowCount === 0) return res.status(404).json({ message: 'Item não encontrado.' });
+        res.status(204).send();
+    } catch (err) {
+        console.error('Erro ao deletar item:', err);
+        res.status(500).json({ message: 'Erro ao deletar item.', error: err.message });
     }
 });
 
