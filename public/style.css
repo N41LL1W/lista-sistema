@@ -1,6 +1,187 @@
-/* ... (todo o seu CSS anterior) ... */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #e9efff;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 50px;
+    min-height: 100vh;
+    margin: 0;
+}
 
-/* --- NOVOS ESTILOS PARA CATEGORIAS --- */
+.container {
+    background-color: #ffffff;
+    padding: 35px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    width: 600px;
+    max-width: 90%;
+    margin-bottom: 30px;
+}
+
+h1, h2 {
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-weight: 600;
+}
+
+.criar-lista-container input {
+    width: calc(100% - 125px); /* Ajuste para caber o botão ao lado */
+    margin-right: 10px;
+}
+
+input[type="text"], input[type="number"] {
+    flex-grow: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+input[type="text"]:focus, input[type="number"]:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+button {
+    padding: 12px 25px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.listas-salvas, .lista-container {
+    text-align: left;
+    margin-top: 20px;
+}
+
+#listas-salvas-ul, #itens-lista, #itens-compra {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#listas-salvas-ul li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e2e6ea;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.lista-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e2e6ea;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: background-color 0.3s, opacity 0.3s;
+}
+
+.item-nome {
+    font-weight: 600;
+    color: #555;
+    font-size: 1.1em;
+    transition: color 0.3s, text-decoration 0.3s;
+    cursor: text;
+}
+
+.item-inputs { display: flex; gap: 10px; align-items: center; }
+.item-inputs input { width: 80px; padding: 8px; font-size: 14px; }
+.item-total { font-weight: bold; color: #28a745; min-width: 80px; text-align: right; font-size: 1.1em; }
+
+.total-container {
+    margin-top: 25px; padding: 20px;
+    background-color: #e2f0ff;
+    border-radius: 8px; text-align: right;
+}
+
+.acoes-container { display: flex; justify-content: space-between; margin-top: 20px; gap: 10px; }
+.acoes-container button { flex-grow: 1; margin: 0; }
+
+.item-editavel {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px; background-color: #f8f9fa;
+    border: 1px solid #e2e6ea; border-radius: 8px; margin-bottom: 10px;
+}
+
+.item-editavel span { flex-grow: 1; cursor: text; }
+
+.deletar-item-btn, .deletar-lista-btn { background-color: #dc3545; color: white; flex-shrink: 0; }
+.deletar-item-btn:hover, .deletar-lista-btn:hover { background-color: #c82333; }
+.deletar-item-btn { padding: 8px 12px; font-size: 14px; }
+.deletar-lista-btn { padding: 10px 15px; font-size: 14px; }
+
+.nome-lista-salva { flex-grow: 1; font-weight: bold; cursor: text; }
+.botoes-lista { display: flex; gap: 10px; flex-shrink: 0; }
+.abrir-lista-btn { padding: 10px 15px; font-size: 14px; }
+
+.lista-item .item-info { display: flex; align-items: center; gap: 15px; flex-grow: 1; }
+.lista-item .item-detalhes { display: flex; align-items: center; gap: 15px; }
+.item-checkbox { width: 20px; height: 20px; flex-shrink: 0; cursor: pointer; }
+
+.lista-item.comprado { background-color: #f0f0f0; opacity: 0.7; }
+.lista-item.comprado .item-nome { text-decoration: line-through; color: #888; }
+
+.total-container h4 { margin: 0 0 10px 0; color: #555; font-weight: normal; }
+.total-container h3 { margin: 0; }
+#total-carrinho { font-weight: bold; color: #28a745; font-size: 1.2em; }
+#total-lista { font-size: 1.2em; color: #007bff; }
+
+.btn-secundario { background-color: #6c757d; }
+.btn-secundario:hover { background-color: #5a6268; }
+
+.input-editavel {
+    font-size: 1em;
+    font-weight: bold;
+    padding: 5px;
+    border: 1px solid #007bff;
+    border-radius: 5px;
+    width: 70%; 
+}
+
+.loader-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(255, 255, 255, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.spinner {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #007bff;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ESTILOS PARA CATEGORIAS */
 .add-item-container {
     display: grid;
     grid-template-columns: 1fr auto auto;
@@ -14,7 +195,7 @@
 
 #nova-categoria-item {
     grid-column: 2 / 3;
-    width: 200px; /* Largura fixa para o campo de categoria */
+    width: 200px;
 }
 
 #adicionar-item-lista-btn {
@@ -32,10 +213,10 @@
 }
 
 .categoria-header:first-child {
-    margin-top: 10px; /* Reduz a margem do primeiro cabeçalho */
+    margin-top: 10px;
 }
 
 .comprado-header {
-    color: #28a745; /* Verde para os itens já no carrinho */
+    color: #28a745;
     border-bottom-color: #d4edda;
 }
