@@ -9,22 +9,17 @@
 <body>
     <!-- Vista Principal: Gerenciador de Listas -->
     <div class="container" id="lista-manager">
-        <h1>Gerenciar Listas</h1>
-        <div class="criar-lista-container">
-            <input type="text" id="nova-lista-nome" placeholder="Nome da nova lista...">
-            <button id="criar-lista-btn">Criar Lista</button>
-        </div>
-        <div class="listas-salvas">
-            <h2>Listas Salvas</h2>
-            <ul id="listas-salvas-ul"></ul>
-        </div>
+        <!-- ...código sem alteração... -->
     </div>
 
     <!-- Vista de Edição de Lista -->
     <div class="container" id="lista-editor" style="display: none;">
         <h1 id="lista-titulo"></h1>
+        <!-- ATUALIZADO: com campo de categoria -->
         <div class="add-item-container">
             <input type="text" id="novo-item-lista" placeholder="Adicionar item à lista...">
+            <input type="text" id="nova-categoria-item" list="categorias-sugeridas" placeholder="Categoria (opcional)...">
+            <datalist id="categorias-sugeridas"></datalist>
             <button id="adicionar-item-lista-btn">Adicionar</button>
         </div>
         <div class="lista-container">
@@ -38,25 +33,10 @@
     
     <!-- Vista de Modo de Compra -->
     <div class="container" id="modo-compra" style="display: none;">
-        <h1 id="compra-titulo"></h1>
-        <div class="add-item-container">
-            <input type="text" id="novo-item-compra" placeholder="Adicionar item de última hora...">
-            <button id="adicionar-item-compra-btn">Adicionar</button>
-        </div>
-        <div class="lista-container">
-            <ul id="itens-compra"></ul>
-        </div>
-        <div class="total-container">
-            <h4>Total no Carrinho: R$ <span id="total-carrinho">0.00</span></h4>
-            <h3>Total da Lista: R$ <span id="total-lista">0.00</span></h3>
-        </div>
-        <div class="acoes-container">
-            <button id="voltar-compra-btn">Voltar</button>
-            <button id="reset-compra-btn" class="btn-secundario">Limpar Compra</button>
-        </div>
+        <!-- ...código sem alteração... -->
     </div>
 
-    <!-- NOVO: Indicador de Carregamento (Loader) -->
+    <!-- Indicador de Carregamento (Loader) -->
     <div id="loader" class="loader-overlay">
         <div class="spinner"></div>
     </div>

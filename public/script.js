@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const listasSalvasUL = document.getElementById('listas-salvas-ul');
     const listaTitulo = document.getElementById('lista-titulo');
     const novoItemListaInput = document.getElementById('novo-item-lista');
+    const novaCategoriaInput = document.getElementById('nova-categoria-item');
     const adicionarItemListaBtn = document.getElementById('adicionar-item-lista-btn');
     const itensListaUL = document.getElementById('itens-lista');
     const voltarBtn = document.getElementById('voltar-btn');
@@ -49,10 +50,24 @@ document.addEventListener('DOMContentLoaded', () => {
         listaManager.style.display = 'none';
         listaEditor.style.display = 'none';
         modoCompra.style.display = 'block';
-        renderizarItensCompra();
+        carregarItensDaLista(listaAtivaId).then(() => {
+            renderizarItensCompra();
+        });
     };
 
     // --- Funções de Lógica e API ---
+    const executarAcaoBackend = async (acao) => {
+        mostrarLoader();
+        try {
+            await acao();
+        } catch (error) {
+            console.error("Erro na ação de backend:", error);
+            alert("Ocorreu um erro. Tente novamente.");
+        } finally {
+            esconderLoader();
+        }
+    };
+
     const carregarListas = async () => {
         mostrarLoader();
         try {
@@ -81,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/listas/${listaId}/itens`);
             const itens = await response.json();
-            itensAtivos = itens.map(item => ({...item, comprado: !!item.comprado}));
+            itensAtivos = itens.map(item => ({ ...item, comprado: !!item.comprado }));
             renderizarItensLista();
         } catch (error) {
             console.error("Erro ao carregar itens da lista:", error);
@@ -89,42 +104,66 @@ document.addEventListener('DOMContentLoaded', () => {
             esconderLoader();
         }
     };
-    
-    const executarAcaoBackend = async (acao) => {
-        mostrarLoader();
-        try {
-            await acao();
-        } catch (error) {
-            console.error("Erro na ação de backend:", error);
-            alert("Ocorreu um erro. Tente novamente.");
-        } finally {
-            esconderLoader();
-        }
-    };
-    
+
     // --- Funções de Renderização ---
     const renderizarItensLista = () => {
         itensListaUL.innerHTML = '';
         iniciarCompraBtn.disabled = itensAtivos.length === 0;
+
+        const categoriasSugeridas = document.getElementById('categorias-sugeridas');
+        const categoriasExistentes = [...new Set(itensAtivos.map(item => item.categoria).filter(Boolean))];
+        categoriasSugeridas.innerHTML = categoriasExistentes.map(c => `<option value="${c}"></option>`).join('');
+
         if (itensAtivos.length === 0) {
             itensListaUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Adicione itens a esta lista.</li>';
-        } else {
-            itensAtivos.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'item-editavel';
-                li.innerHTML = `<span>${item.nome_item}</span><button class="deletar-item-btn" data-id="${item.id}">Deletar</button>`;
-                itensListaUL.appendChild(li);
-            });
+            return;
         }
+
+        let categoriaAtual = "---";
+        itensAtivos.forEach(item => {
+            if (item.categoria !== categoriaAtual) {
+                categoriaAtual = item.categoria;
+                const categoriaHeader = document.createElement('li');
+                categoriaHeader.className = 'categoria-header';
+                categoriaHeader.textContent = categoriaAtual || 'Sem Categoria';
+                itensListaUL.appendChild(categoriaHeader);
+            }
+
+            const li = document.createElement('li');
+            li.className = 'item-editavel';
+            li.innerHTML = `<span>${item.nome_item}</span><button class="deletar-item-btn" data-id="${item.id}">Deletar</button>`;
+            itensListaUL.appendChild(li);
+        });
     };
 
     const renderizarItensCompra = () => {
         itensAtivos.sort((a, b) => a.comprado - b.comprado);
         itensCompraUL.innerHTML = '';
+
         if (itensAtivos.length === 0) {
             itensCompraUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Sua lista de compras está vazia.</li>';
         } else {
+            let categoriaAtual = "---";
+            let cabecalhoCompradosAdicionado = false;
+
             itensAtivos.forEach(item => {
+                // Se o item foi comprado e o cabeçalho ainda não existe, crie-o
+                if (item.comprado && !cabecalhoCompradosAdicionado) {
+                    const compradoHeader = document.createElement('li');
+                    compradoHeader.className = 'categoria-header comprado-header';
+                    compradoHeader.textContent = 'Itens no Carrinho';
+                    itensCompraUL.appendChild(compradoHeader);
+                    cabecalhoCompradosAdicionado = true;
+                } 
+                // Se o item NÃO foi comprado e a categoria mudou, crie um novo cabeçalho de categoria
+                else if (!item.comprado && item.categoria !== categoriaAtual) {
+                    categoriaAtual = item.categoria;
+                    const categoriaHeader = document.createElement('li');
+                    categoriaHeader.className = 'categoria-header';
+                    categoriaHeader.textContent = categoriaAtual || 'Sem Categoria';
+                    itensCompraUL.appendChild(categoriaHeader);
+                }
+
                 const subtotal = (item.valor_unitario || 0) * (item.quantidade || 1);
                 const li = document.createElement('li');
                 li.className = `lista-item ${item.comprado ? 'comprado' : ''}`;
@@ -224,16 +263,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    adicionarItemListaBtn.addEventListener('click', () => executarAcaoBackend(async () => {
-        await fetch(`/api/listas/${listaAtivaId}/itens`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_item: novoItemListaInput.value }) });
-        novoItemListaInput.value = '';
-        await carregarItensDaLista(listaAtivaId);
-    }));
+    const adicionarNovoItem = () => {
+        const nomeItem = novoItemListaInput.value.trim();
+        const categoriaItem = novaCategoriaInput.value.trim();
+        if (!nomeItem) return;
+
+        executarAcaoBackend(async () => {
+            await fetch(`/api/listas/${listaAtivaId}/itens`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome_item: nomeItem, categoria: categoriaItem })
+            });
+            novoItemListaInput.value = '';
+            novaCategoriaInput.value = '';
+            await carregarItensDaLista(listaAtivaId);
+            novoItemListaInput.focus();
+        });
+    };
+
+    adicionarItemListaBtn.addEventListener('click', adicionarNovoItem);
+    novoItemListaInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') adicionarNovoItem(); });
+    novaCategoriaInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') adicionarNovoItem(); });
 
     adicionarItemCompraBtn.addEventListener('click', () => executarAcaoBackend(async () => {
         const response = await fetch(`/api/listas/${listaAtivaId}/itens`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_item: novoItemCompraInput.value }) });
         const novoItem = await response.json();
-        itensAtivos.push({...novoItem, comprado: false});
+        itensAtivos.push({ ...novoItem, comprado: false });
         novoItemCompraInput.value = '';
         renderizarItensCompra();
     }));
@@ -247,8 +302,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const comprado = li.querySelector('.item-checkbox').checked;
         const itemIndex = itensAtivos.findIndex(item => item.id == id);
         if (itemIndex > -1) itensAtivos[itemIndex] = { ...itensAtivos[itemIndex], valor_unitario: valor, quantidade, comprado };
-        if (e.target.classList.contains('item-checkbox')) renderizarItensCompra();
-        else { li.querySelector('.item-total').textContent = `R$ ${(valor * quantidade).toFixed(2)}`; renderizarTotais(); }
+
+        renderizarItensCompra();
+
         fetch(`/api/itens/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ valor_unitario: valor, quantidade, comprado }) });
     });
 
@@ -265,7 +321,6 @@ document.addEventListener('DOMContentLoaded', () => {
     voltarBtn.addEventListener('click', mostrarManager);
     voltarCompraBtn.addEventListener('click', mostrarManager);
     iniciarCompraBtn.addEventListener('click', () => mostrarCompra(listaTitulo.textContent.replace('Lista: ', '')));
-    novoItemListaInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') adicionarItemListaBtn.click(); });
     novoItemCompraInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') adicionarItemCompraBtn.click(); });
 
     // Iniciar

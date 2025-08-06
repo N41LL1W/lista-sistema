@@ -15,6 +15,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- ROTAS DE LISTAS ---
+
 app.post('/api/listas', async (req, res) => {
     const { nome_lista } = req.body;
     try {
@@ -37,7 +38,6 @@ app.get('/api/listas', async (req, res) => {
     }
 });
 
-// --- NOVO: Rota para renomear uma lista (PATCH) ---
 app.patch('/api/listas/:listaId', async (req, res) => {
     const { listaId } = req.params;
     const { nome_lista } = req.body;
@@ -84,11 +84,13 @@ app.put('/api/listas/:listaId/reset', async (req, res) => {
     }
 });
 
+
 // --- ROTAS DE ITENS ---
+
 app.get('/api/listas/:listaId/itens', async (req, res) => {
     const { listaId } = req.params;
     try {
-        const query = 'SELECT * FROM itens_lista WHERE lista_id = $1 ORDER BY id';
+        const query = 'SELECT * FROM itens_lista WHERE lista_id = $1 ORDER BY categoria ASC NULLS FIRST, id';
         const result = await pool.query(query, [listaId]);
         res.status(200).json(result.rows);
     } catch (err) {
@@ -99,10 +101,10 @@ app.get('/api/listas/:listaId/itens', async (req, res) => {
 
 app.post('/api/listas/:listaId/itens', async (req, res) => {
     const { listaId } = req.params;
-    const { nome_item } = req.body;
+    const { nome_item, categoria } = req.body;
     try {
-        const query = 'INSERT INTO itens_lista (lista_id, nome_item) VALUES ($1, $2) RETURNING *';
-        const result = await pool.query(query, [listaId, nome_item]);
+        const query = 'INSERT INTO itens_lista (lista_id, nome_item, categoria) VALUES ($1, $2, $3) RETURNING *';
+        const result = await pool.query(query, [listaId, nome_item, categoria || null]);
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('Erro ao adicionar item:', err);
@@ -124,7 +126,6 @@ app.put('/api/itens/:itemId', async (req, res) => {
     }
 });
 
-// --- NOVO: Rota para renomear um item (PATCH) ---
 app.patch('/api/itens/:itemId', async (req, res) => {
     const { itemId } = req.params;
     const { nome_item } = req.body;
