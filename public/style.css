@@ -26,8 +26,12 @@ h1, h2 {
     font-weight: 600;
 }
 
+.criar-lista-container {
+    display: flex;
+}
+
 .criar-lista-container input {
-    width: calc(100% - 125px); /* Ajuste para caber o botão ao lado */
+    flex-grow: 1;
     margin-right: 10px;
 }
 
@@ -189,18 +193,15 @@ button:hover {
     align-items: center;
 }
 
-#novo-item-lista {
-    grid-column: 1 / 2;
+.add-item-container-compra {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
-#nova-categoria-item {
-    grid-column: 2 / 3;
-    width: 200px;
-}
-
-#adicionar-item-lista-btn {
-    grid-column: 3 / 4;
-}
+#novo-item-lista { grid-column: 1 / 2; }
+#nova-categoria-item { grid-column: 2 / 3; width: 200px; }
+#adicionar-item-lista-btn { grid-column: 3 / 4; }
 
 .categoria-header {
     font-size: 1.1em;

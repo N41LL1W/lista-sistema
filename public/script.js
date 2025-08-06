@@ -147,15 +147,13 @@ document.addEventListener('DOMContentLoaded', () => {
             let cabecalhoCompradosAdicionado = false;
 
             itensAtivos.forEach(item => {
-                // Se o item foi comprado e o cabeçalho ainda não existe, crie-o
                 if (item.comprado && !cabecalhoCompradosAdicionado) {
                     const compradoHeader = document.createElement('li');
                     compradoHeader.className = 'categoria-header comprado-header';
                     compradoHeader.textContent = 'Itens no Carrinho';
                     itensCompraUL.appendChild(compradoHeader);
                     cabecalhoCompradosAdicionado = true;
-                } 
-                // Se o item NÃO foi comprado e a categoria mudou, crie um novo cabeçalho de categoria
+                }
                 else if (!item.comprado && item.categoria !== categoriaAtual) {
                     categoriaAtual = item.categoria;
                     const categoriaHeader = document.createElement('li');
@@ -188,11 +186,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Event Listeners ---
-    criarListaBtn.addEventListener('click', () => executarAcaoBackend(async () => {
-        await fetch('/api/listas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_lista: novaListaNomeInput.value }) });
-        novaListaNomeInput.value = '';
-        await carregarListas();
-    }));
+    criarListaBtn.addEventListener('click', () => {
+        if (!novaListaNomeInput.value.trim()) return;
+        executarAcaoBackend(async () => {
+            await fetch('/api/listas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_lista: novaListaNomeInput.value }) });
+            novaListaNomeInput.value = '';
+            await carregarListas();
+        })
+    });
 
     listasSalvasUL.addEventListener('click', (e) => {
         const target = e.target;
@@ -285,13 +286,17 @@ document.addEventListener('DOMContentLoaded', () => {
     novoItemListaInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') adicionarNovoItem(); });
     novaCategoriaInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') adicionarNovoItem(); });
 
-    adicionarItemCompraBtn.addEventListener('click', () => executarAcaoBackend(async () => {
-        const response = await fetch(`/api/listas/${listaAtivaId}/itens`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_item: novoItemCompraInput.value }) });
-        const novoItem = await response.json();
-        itensAtivos.push({ ...novoItem, comprado: false });
-        novoItemCompraInput.value = '';
-        renderizarItensCompra();
-    }));
+    adicionarItemCompraBtn.addEventListener('click', () => {
+        const nomeItem = novoItemCompraInput.value.trim();
+        if (!nomeItem) return;
+        executarAcaoBackend(async () => {
+            const response = await fetch(`/api/listas/${listaAtivaId}/itens`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_item: nomeItem }) });
+            const novoItem = await response.json();
+            itensAtivos.push({ ...novoItem, comprado: false });
+            novoItemCompraInput.value = '';
+            renderizarItensCompra();
+        });
+    });
 
     itensCompraUL.addEventListener('change', (e) => {
         const li = e.target.closest('li');
