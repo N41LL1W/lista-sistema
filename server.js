@@ -4,18 +4,51 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configuração do banco de dados Neon DB
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
-// Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- ROTAS DE LISTAS ---
+// Rota GET de itens_lista (VERSÃO DE DIAGNÓSTICO)
+app.get('/api/listas/:listaId/itens', async (req, res) => {
+    const { listaId } = req.params;
+    try {
+        console.log(`Buscando itens para a lista: ${listaId}`);
+        // REMOVIDO TEMPORARIAMENTE A ORDENAÇÃO PARA ISOLAR O ERRO
+        const query = 'SELECT * FROM itens_lista WHERE lista_id = $1';
+        const result = await pool.query(query, [listaId]);
+        console.log(`Encontrados ${result.rowCount} itens.`);
+        res.status(200).json(result.rows);
+    } catch (err) {
+        // LOG DETALHADO DO ERRO NO SERVIDOR
+        console.error('ERRO DETALHADO AO BUSCAR ITENS:', err);
+        res.status(500).json({ message: 'Erro detalhado no servidor.', error: err.stack });
+    }
+});
 
+// Rota POST de itens_lista (VERSÃO DE DIAGNÓSTICO)
+app.post('/api/listas/:listaId/itens', async (req, res) => {
+    const { listaId } = req.params;
+    const { nome_item, categoria } = req.body;
+    try {
+        console.log(`Adicionando item '${nome_item}' com categoria '${categoria}' na lista ${listaId}`);
+        const categoriaParaSalvar = categoria && categoria.trim() !== '' ? categoria.trim() : null;
+        
+        const query = 'INSERT INTO itens_lista (lista_id, nome_item, categoria) VALUES ($1, $2, $3) RETURNING *';
+        const result = await pool.query(query, [listaId, nome_item, categoriaParaSalvar]);
+        console.log('Item adicionado com sucesso:', result.rows[0]);
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        // LOG DETALHADO DO ERRO NO SERVIDOR
+        console.error('ERRO DETALHADO AO ADICIONAR ITEM:', err);
+        res.status(500).json({ message: 'Erro detalhado no servidor.', error: err.stack });
+    }
+});
+
+// --- Outras rotas (sem alterações) ---
 app.post('/api/listas', async (req, res) => {
     const { nome_lista } = req.body;
     try {
@@ -27,7 +60,6 @@ app.post('/api/listas', async (req, res) => {
         res.status(500).json({ message: 'Erro ao criar lista.', error: err.message });
     }
 });
-
 app.get('/api/listas', async (req, res) => {
     try {
         const result = await pool.query('SELECT id, nome_lista FROM listas ORDER BY data_criacao DESC');
@@ -37,7 +69,6 @@ app.get('/api/listas', async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar listas.', error: err.message });
     }
 });
-
 app.patch('/api/listas/:listaId', async (req, res) => {
     const { listaId } = req.params;
     const { nome_lista } = req.body;
@@ -52,7 +83,6 @@ app.patch('/api/listas/:listaId', async (req, res) => {
         res.status(500).json({ message: 'Erro ao renomear lista.', error: err.message });
     }
 });
-
 app.delete('/api/listas/:listaId', async (req, res) => {
     const { listaId } = req.params;
     const client = await pool.connect();
@@ -71,7 +101,6 @@ app.delete('/api/listas/:listaId', async (req, res) => {
         client.release();
     }
 });
-
 app.put('/api/listas/:listaId/reset', async (req, res) => {
     const { listaId } = req.params;
     try {
@@ -83,39 +112,6 @@ app.put('/api/listas/:listaId/reset', async (req, res) => {
         res.status(500).json({ message: 'Erro ao resetar a lista.', error: err.message });
     }
 });
-
-
-// --- ROTAS DE ITENS ---
-
-app.get('/api/listas/:listaId/itens', async (req, res) => {
-    const { listaId } = req.params;
-    try {
-        // CORRIGIDO: Query mais robusta
-        const query = 'SELECT id, nome_item, lista_id, valor_unitario, quantidade, comprado, data_criacao, COALESCE(categoria, \'\') as categoria FROM itens_lista WHERE lista_id = $1 ORDER BY categoria ASC NULLS FIRST, id';
-        const result = await pool.query(query, [listaId]);
-        res.status(200).json(result.rows);
-    } catch (err) {
-        console.error('Erro ao buscar itens:', err.message);
-        res.status(500).json({ message: 'Erro ao buscar itens.', error: err.message });
-    }
-});
-
-app.post('/api/listas/:listaId/itens', async (req, res) => {
-    const { listaId } = req.params;
-    const { nome_item, categoria } = req.body;
-    try {
-        // CORRIGIDO: Tratamento explícito para a categoria
-        const categoriaParaSalvar = categoria && categoria.trim() !== '' ? categoria.trim() : null;
-        
-        const query = 'INSERT INTO itens_lista (lista_id, nome_item, categoria) VALUES ($1, $2, $3) RETURNING *';
-        const result = await pool.query(query, [listaId, nome_item, categoriaParaSalvar]);
-        res.status(201).json(result.rows[0]);
-    } catch (err) {
-        console.error('Erro ao adicionar item:', err.message);
-        res.status(500).json({ message: 'Erro ao adicionar item.', error: err.message });
-    }
-});
-
 app.put('/api/itens/:itemId', async (req, res) => {
     const { itemId } = req.params;
     const { valor_unitario, quantidade, comprado } = req.body;
@@ -129,7 +125,6 @@ app.put('/api/itens/:itemId', async (req, res) => {
         res.status(500).json({ message: 'Erro ao atualizar item.', error: err.message });
     }
 });
-
 app.patch('/api/itens/:itemId', async (req, res) => {
     const { itemId } = req.params;
     const { nome_item } = req.body;
@@ -144,7 +139,6 @@ app.patch('/api/itens/:itemId', async (req, res) => {
         res.status(500).json({ message: 'Erro ao renomear item.', error: err.message });
     }
 });
-
 app.delete('/api/itens/:itemId', async (req, res) => {
     const { itemId } = req.params;
     try {
@@ -157,7 +151,6 @@ app.delete('/api/itens/:itemId', async (req, res) => {
     }
 });
 
-// Inicia o servidor
 app.listen(port, () => {
     console.log(`Servidor rodando em http://localhost:${port}`);
 });
