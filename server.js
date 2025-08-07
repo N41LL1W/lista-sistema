@@ -90,11 +90,12 @@ app.put('/api/listas/:listaId/reset', async (req, res) => {
 app.get('/api/listas/:listaId/itens', async (req, res) => {
     const { listaId } = req.params;
     try {
-        const query = 'SELECT * FROM itens_lista WHERE lista_id = $1 ORDER BY categoria ASC NULLS FIRST, id';
+        // CORRIGIDO: Query mais robusta
+        const query = 'SELECT id, nome_item, lista_id, valor_unitario, quantidade, comprado, data_criacao, COALESCE(categoria, \'\') as categoria FROM itens_lista WHERE lista_id = $1 ORDER BY categoria ASC NULLS FIRST, id';
         const result = await pool.query(query, [listaId]);
         res.status(200).json(result.rows);
     } catch (err) {
-        console.error('Erro ao buscar itens:', err);
+        console.error('Erro ao buscar itens:', err.message);
         res.status(500).json({ message: 'Erro ao buscar itens.', error: err.message });
     }
 });
@@ -103,11 +104,14 @@ app.post('/api/listas/:listaId/itens', async (req, res) => {
     const { listaId } = req.params;
     const { nome_item, categoria } = req.body;
     try {
+        // CORRIGIDO: Tratamento explícito para a categoria
+        const categoriaParaSalvar = categoria && categoria.trim() !== '' ? categoria.trim() : null;
+        
         const query = 'INSERT INTO itens_lista (lista_id, nome_item, categoria) VALUES ($1, $2, $3) RETURNING *';
-        const result = await pool.query(query, [listaId, nome_item, categoria || null]);
+        const result = await pool.query(query, [listaId, nome_item, categoriaParaSalvar]);
         res.status(201).json(result.rows[0]);
     } catch (err) {
-        console.error('Erro ao adicionar item:', err);
+        console.error('Erro ao adicionar item:', err.message);
         res.status(500).json({ message: 'Erro ao adicionar item.', error: err.message });
     }
 });
