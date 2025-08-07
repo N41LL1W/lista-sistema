@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarLoader();
         try {
             const response = await fetch('/api/listas');
+            if (!response.ok) throw new Error(`Erro do servidor: ${response.status}`);
             const listas = await response.json();
             listasSalvasUL.innerHTML = '';
             listas.forEach(lista => {
@@ -95,15 +96,26 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarLoader();
         try {
             const response = await fetch(`/api/listas/${listaId}/itens`);
+            if (!response.ok) {
+                throw new Error(`Erro do servidor: ${response.status}`);
+            }
             const itens = await response.json();
-            itensAtivos = itens.map(item => ({ ...item, comprado: !!item.comprado }));
+            if (Array.isArray(itens)) {
+                itensAtivos = itens.map(item => ({ ...item, comprado: !!item.comprado }));
+            } else {
+                console.error("A API não retornou um array de itens.", itens);
+                itensAtivos = [];
+            }
             renderizarItensLista();
         } catch (error) {
             console.error("Erro ao carregar itens da lista:", error);
+            itensAtivos = [];
+            renderizarItensLista();
         } finally {
             esconderLoader();
         }
     };
+
 
     // --- Funções de Renderização ---
     const renderizarItensLista = () => {
@@ -115,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         categoriasSugeridas.innerHTML = categoriasExistentes.map(c => `<option value="${c}"></option>`).join('');
 
         if (itensAtivos.length === 0) {
-            itensListaUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Adicione itens a esta lista.</li>';
+            itensListaUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Adicione itens a esta lista ou verifique a conexão.</li>';
             return;
         }
 
@@ -330,4 +342,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Iniciar
     mostrarManager();
-});
+});```
+
+### **O Que Fazer Agora**
+
+1.  **Primeiro e mais importante:** Vá ao seu **Neon DB** e execute o comando `ALTER TABLE itens_lista ADD COLUMN IF NOT EXISTS categoria VARCHAR(100);`.
+2.  **Depois:** Substitua o conteúdo do seu arquivo `/public/script.js` pelo código completo acima.
+3.  Faça o deploy novamente para a Vercel com os comandos `git add .`, `git commit -m "Fix: Corrige erro 500 e robustez do frontend"`, e `git push`.
+
+Isso deve resolver o problema de forma definitiva. O erro foi uma combinação de um problema no banco de dados e um frontend que não estava preparado para lidar com erros do backend. Agora ambos estão corrigidos.
+
+Me avise se funcionar
