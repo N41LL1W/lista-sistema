@@ -15,7 +15,7 @@ body {
     border-radius: 12px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     width: 600px;
-    max-width: 90%;
+    max-width: 90%; /* Mantém uma margem em telas um pouco maiores que 600px */
     margin-bottom: 30px;
 }
 
@@ -185,20 +185,13 @@ button:hover {
     100% { transform: rotate(360deg); }
 }
 
-/* ESTILOS PARA CATEGORIAS */
 .add-item-container {
     display: grid;
     grid-template-columns: 1fr auto auto;
     gap: 10px;
     align-items: center;
 }
-
-.add-item-container-compra {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
+.add-item-container-compra { display: flex; gap: 10px; margin-bottom: 20px; }
 #novo-item-lista { grid-column: 1 / 2; }
 #nova-categoria-item { grid-column: 2 / 3; width: 200px; }
 #adicionar-item-lista-btn { grid-column: 3 / 4; }
@@ -212,12 +205,70 @@ button:hover {
     padding-bottom: 5px;
     border-bottom: 2px solid #e2f0ff;
 }
+.categoria-header:first-child { margin-top: 10px; }
+.comprado-header { color: #28a745; border-bottom-color: #d4edda; }
 
-.categoria-header:first-child {
-    margin-top: 10px;
-}
+/* --- MEDIA QUERIES PARA RESPONSIVIDADE --- */
+@media (max-width: 768px) {
+    body {
+        padding-top: 20px;
+    }
 
-.comprado-header {
-    color: #28a745;
-    border-bottom-color: #d4edda;
+    .container {
+        padding: 20px;
+        width: 95%; /* Ocupa quase toda a tela, com uma pequena margem */
+    }
+
+    h1 { font-size: 1.8em; }
+    h2 { font-size: 1.4em; }
+
+    /* Empilha os campos de adicionar item */
+    .add-item-container {
+        grid-template-columns: 1fr; /* Muda para uma única coluna */
+    }
+
+    #novo-item-lista,
+    #nova-categoria-item,
+    #adicionar-item-lista-btn {
+        grid-column: 1 / -1; /* Faz cada item ocupar a linha inteira */
+        width: 100%;
+    }
+
+    .add-item-container-compra {
+        flex-direction: column;
+    }
+    
+    /* Empilha os botões de ação (Voltar, Limpar Compra, etc.) */
+    .acoes-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* Empilha os detalhes do item na lista de compra para caber melhor */
+    .lista-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .lista-item .item-detalhes {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .item-inputs input {
+        width: 65px; /* Reduz um pouco o tamanho dos inputs de valor/qtd */
+    }
+    
+    .botoes-lista {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    
+    #listas-salvas-ul li {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }
