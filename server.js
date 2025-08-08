@@ -18,11 +18,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/listas', async (req, res) => {
     try {
-        // Busca as listas normais (is_template = false ou nulo para retrocompatibilidade)
         const listasQuery = 'SELECT id, nome_lista FROM listas WHERE is_template = false OR is_template IS NULL ORDER BY data_criacao DESC';
         const listasResult = await pool.query(listasQuery);
 
-        // Busca os modelos
         const templatesQuery = 'SELECT id, nome_lista FROM listas WHERE is_template = true ORDER BY nome_lista ASC';
         const templatesResult = await pool.query(templatesQuery);
 
@@ -110,6 +108,23 @@ app.post('/api/listas/save-as-template', async (req, res) => {
     }
 });
 
+// --- ROTA FALTANTE ADICIONADA AQUI ---
+app.get('/api/listas/:listaId/token', async (req, res) => {
+    const { listaId } = req.params;
+    try {
+        const query = 'SELECT share_token FROM listas WHERE id = $1';
+        const result = await pool.query(query, [listaId]);
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Lista não encontrada.' });
+        }
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error('Erro ao obter token:', err.stack);
+        res.status(500).json({ message: 'Erro ao obter token.' });
+    }
+});
+
 app.patch('/api/listas/:listaId', async (req, res) => {
     const { listaId } = req.params;
     const { nome_lista } = req.body;
@@ -153,6 +168,34 @@ app.put('/api/listas/:listaId/reset', async (req, res) => {
     } catch (err) {
         console.error('Erro ao resetar a lista:', err.stack);
         res.status(500).json({ message: 'Erro ao resetar a lista.', error: err.message });
+    }
+});
+
+
+// --- ROTAS DE COMPARTILHAMENTO ---
+
+// --- ROTA FALTANTE ADICIONADA AQUI ---
+app.get('/api/share/:token', async (req, res) => {
+    const { token } = req.params;
+    try {
+        const listaQuery = 'SELECT id, nome_lista FROM listas WHERE share_token = $1';
+        const listaResult = await pool.query(listaQuery, [token]);
+
+        if (listaResult.rowCount === 0) {
+            return res.status(404).json({ message: 'Lista compartilhada não encontrada.' });
+        }
+        const lista = listaResult.rows[0];
+
+        const itensQuery = 'SELECT nome_item, categoria FROM itens_lista WHERE lista_id = $1 ORDER BY categoria ASC NULLS FIRST, id';
+        const itensResult = await pool.query(itensQuery, [lista.id]);
+
+        res.status(200).json({
+            nome_lista: lista.nome_lista,
+            itens: itensResult.rows
+        });
+    } catch (err) {
+        console.error('Erro ao buscar lista compartilhada:', err.stack);
+        res.status(500).json({ message: 'Erro ao buscar lista compartilhada.' });
     }
 });
 
