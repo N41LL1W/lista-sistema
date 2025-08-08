@@ -108,7 +108,6 @@ app.post('/api/listas/save-as-template', async (req, res) => {
     }
 });
 
-// --- ROTA FALTANTE ADICIONADA AQUI ---
 app.get('/api/listas/:listaId/token', async (req, res) => {
     const { listaId } = req.params;
     try {
@@ -174,7 +173,6 @@ app.put('/api/listas/:listaId/reset', async (req, res) => {
 
 // --- ROTAS DE COMPARTILHAMENTO ---
 
-// --- ROTA FALTANTE ADICIONADA AQUI ---
 app.get('/api/share/:token', async (req, res) => {
     const { token } = req.params;
     try {
