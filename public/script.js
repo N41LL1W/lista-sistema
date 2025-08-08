@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const criarFromModeloBtn = document.getElementById('criar-from-modelo-btn');
     const modeloSelect = document.getElementById('modelo-select');
     const novaListaFromModeloNomeInput = document.getElementById('nova-lista-from-modelo-nome');
+    const compartilharBtn = document.getElementById('compartilhar-btn');
 
     // Variáveis de Estado
     let listaAtivaId = null;
@@ -363,6 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 if (response.ok) {
                     alert(`Modelo "${nomeTemplate}" salvo com sucesso!`);
+                    await carregarListas(); // Atualiza a lista de modelos na tela principal
                 } else {
                     alert("Falha ao salvar o modelo.");
                 }
@@ -392,6 +394,22 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 alert("Falha ao criar lista a partir do modelo.");
             }
+        });
+    });
+
+    compartilharBtn.addEventListener('click', () => {
+        executarAcaoBackend(async () => {
+            const response = await fetch(`/api/listas/${listaAtivaId}/token`);
+            if (!response.ok) {
+                alert("Não foi possível gerar o link de compartilhamento.");
+                return;
+            }
+            const data = await response.json();
+            const token = data.share_token;
+
+            const shareUrl = `${window.location.origin}/share.html?token=${token}`;
+
+            prompt("Copie este link para compartilhar sua lista (somente visualização):", shareUrl);
         });
     });
 

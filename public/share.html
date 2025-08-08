@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Compras Compartilhada</title>
+    <link rel="stylesheet" href="style.css"> <!-- Reutilizamos o mesmo estilo! -->
+    <style>
+        /* Estilos específicos para a página de compartilhamento */
+        body { justify-content: center; }
+        .container { margin-top: 20px; }
+        #itens-compartilhados li { background-color: #fff; padding: 15px; border-radius: 8px; margin-bottom: 5px; }
+        .item-nome-compartilhado { font-weight: normal; font-size: 1.1em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="lista-compartilhada-titulo">Carregando lista...</h1>
+        <ul id="itens-compartilhados">
+            <!-- Itens serão inseridos aqui pelo JavaScript -->
+        </ul>
+    </div>
+    <script src="share.js"></script>
+</body>
+</html>
