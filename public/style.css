@@ -272,3 +272,34 @@ button:hover {
         align-items: stretch;
     }
 }
+.modelo-container {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.modelo-container h2 {
+    font-size: 1.4em;
+    margin-bottom: 15px;
+}
+
+.modelo-container .criar-lista-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 10px;
+}
+
+.modelo-container select, .modelo-container input {
+    flex-grow: 1;
+    width: 100%;
+    font-size: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+/* Ajustes para o botão "Salvar como Modelo" no container de ações */
+#lista-editor .acoes-container {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+}

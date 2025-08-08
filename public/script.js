@@ -20,6 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const voltarCompraBtn = document.getElementById('voltar-compra-btn');
     const resetCompraBtn = document.getElementById('reset-compra-btn');
     const loader = document.getElementById('loader');
+    const salvarComoModeloBtn = document.getElementById('salvar-como-modelo-btn');
+    const criarFromModeloBtn = document.getElementById('criar-from-modelo-btn');
+    const modeloSelect = document.getElementById('modelo-select');
+    const novaListaFromModeloNomeInput = document.getElementById('nova-lista-from-modelo-nome');
 
     // Variáveis de Estado
     let listaAtivaId = null;
@@ -73,18 +77,33 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/listas');
             if (!response.ok) throw new Error(`Erro do servidor: ${response.status}`);
-            const listas = await response.json();
+            const data = await response.json();
+
             listasSalvasUL.innerHTML = '';
-            listas.forEach(lista => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span class="nome-lista-salva">${lista.nome_lista}</span>
-                    <div class="botoes-lista">
-                        <button class="abrir-lista-btn" data-id="${lista.id}" data-nome="${lista.nome_lista}">Abrir</button>
-                        <button class="deletar-lista-btn" data-id="${lista.id}">Deletar</button>
-                    </div>`;
-                listasSalvasUL.appendChild(li);
-            });
+            if (data.listas.length === 0) {
+                listasSalvasUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Nenhuma lista salva. Crie uma!</li>';
+            } else {
+                data.listas.forEach(lista => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="nome-lista-salva">${lista.nome_lista}</span>
+                        <div class="botoes-lista">
+                            <button class="abrir-lista-btn" data-id="${lista.id}" data-nome="${lista.nome_lista}">Abrir</button>
+                            <button class="deletar-lista-btn" data-id="${lista.id}">Deletar</button>
+                        </div>`;
+                    listasSalvasUL.appendChild(li);
+                });
+            }
+
+            modeloSelect.innerHTML = '<option value="">-- Selecione um Modelo --</option>';
+            if (data.templates.length > 0) {
+                data.templates.forEach(template => {
+                    const option = document.createElement('option');
+                    option.value = template.id;
+                    option.textContent = template.nome_lista;
+                    modeloSelect.appendChild(option);
+                });
+            }
         } catch (error) {
             console.error("Erro ao carregar listas:", error);
         } finally {
@@ -92,13 +111,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+
     const carregarItensDaLista = async (listaId) => {
         mostrarLoader();
         try {
             const response = await fetch(`/api/listas/${listaId}/itens`);
-            if (!response.ok) {
-                throw new Error(`Erro do servidor: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Erro do servidor: ${response.status}`);
             const itens = await response.json();
             if (Array.isArray(itens)) {
                 itensAtivos = itens.map(item => ({ ...item, comprado: !!item.comprado }));
@@ -115,7 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
             esconderLoader();
         }
     };
-
 
     // --- Funções de Renderização ---
     const renderizarItensLista = () => {
@@ -335,6 +352,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    salvarComoModeloBtn.addEventListener('click', () => {
+        const nomeTemplate = prompt("Digite um nome para este modelo:", listaTitulo.textContent.replace('Lista: ', ''));
+        if (nomeTemplate && nomeTemplate.trim() !== "") {
+            executarAcaoBackend(async () => {
+                const response = await fetch('/api/listas/save-as-template', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome_template: nomeTemplate, lista_original_id: listaAtivaId })
+                });
+                if (response.ok) {
+                    alert(`Modelo "${nomeTemplate}" salvo com sucesso!`);
+                } else {
+                    alert("Falha ao salvar o modelo.");
+                }
+            });
+        }
+    });
+
+    criarFromModeloBtn.addEventListener('click', () => {
+        const modeloId = modeloSelect.value;
+        const nomeNovaLista = novaListaFromModeloNomeInput.value;
+
+        if (!modeloId || !nomeNovaLista.trim()) {
+            alert("Por favor, selecione um modelo e dê um nome para a nova lista.");
+            return;
+        }
+
+        executarAcaoBackend(async () => {
+            const response = await fetch('/api/listas/from-template', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome_nova_lista: nomeNovaLista, template_id: modeloId })
+            });
+            if (response.ok) {
+                novaListaFromModeloNomeInput.value = '';
+                modeloSelect.value = '';
+                await carregarListas();
+            } else {
+                alert("Falha ao criar lista a partir do modelo.");
+            }
+        });
+    });
+
     voltarBtn.addEventListener('click', mostrarManager);
     voltarCompraBtn.addEventListener('click', mostrarManager);
     iniciarCompraBtn.addEventListener('click', () => mostrarCompra(listaTitulo.textContent.replace('Lista: ', '')));
@@ -342,4 +402,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Iniciar
     mostrarManager();
-})
+});

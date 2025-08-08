@@ -16,10 +16,30 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // --- ROTAS DE LISTAS ---
 
+app.get('/api/listas', async (req, res) => {
+    try {
+        // Busca as listas normais (is_template = false ou nulo para retrocompatibilidade)
+        const listasQuery = 'SELECT id, nome_lista FROM listas WHERE is_template = false OR is_template IS NULL ORDER BY data_criacao DESC';
+        const listasResult = await pool.query(listasQuery);
+
+        // Busca os modelos
+        const templatesQuery = 'SELECT id, nome_lista FROM listas WHERE is_template = true ORDER BY nome_lista ASC';
+        const templatesResult = await pool.query(templatesQuery);
+
+        res.status(200).json({
+            listas: listasResult.rows,
+            templates: templatesResult.rows
+        });
+    } catch (err) {
+        console.error('Erro ao buscar listas:', err.stack);
+        res.status(500).json({ message: 'Erro ao buscar listas.', error: err.message });
+    }
+});
+
 app.post('/api/listas', async (req, res) => {
     const { nome_lista } = req.body;
     try {
-        const query = 'INSERT INTO listas (nome_lista) VALUES ($1) RETURNING id, nome_lista';
+        const query = 'INSERT INTO listas (nome_lista, is_template) VALUES ($1, false) RETURNING id, nome_lista';
         const result = await pool.query(query, [nome_lista]);
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -28,13 +48,65 @@ app.post('/api/listas', async (req, res) => {
     }
 });
 
-app.get('/api/listas', async (req, res) => {
+app.post('/api/listas/from-template', async (req, res) => {
+    const { nome_nova_lista, template_id } = req.body;
+    const client = await pool.connect();
     try {
-        const result = await pool.query('SELECT id, nome_lista FROM listas ORDER BY data_criacao DESC');
-        res.status(200).json(result.rows);
+        await client.query('BEGIN');
+
+        const novaListaQuery = 'INSERT INTO listas (nome_lista, is_template) VALUES ($1, false) RETURNING id';
+        const novaListaResult = await client.query(novaListaQuery, [nome_nova_lista]);
+        const novaListaId = novaListaResult.rows[0].id;
+
+        const itensModeloQuery = 'SELECT nome_item, categoria FROM itens_lista WHERE lista_id = $1';
+        const itensModeloResult = await client.query(itensModeloQuery, [template_id]);
+        const itensParaCopiar = itensModeloResult.rows;
+
+        if (itensParaCopiar.length > 0) {
+            const valoresInsert = itensParaCopiar.map(item => `(${novaListaId}, '${item.nome_item.replace(/'/g, "''")}', ${item.categoria ? `'${item.categoria.replace(/'/g, "''")}'` : 'NULL'})`).join(',');
+            const insertItensQuery = `INSERT INTO itens_lista (lista_id, nome_item, categoria) VALUES ${valoresInsert}`;
+            await client.query(insertItensQuery);
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json({ id: novaListaId, nome_lista: nome_nova_lista });
     } catch (err) {
-        console.error('Erro ao buscar listas:', err.stack);
-        res.status(500).json({ message: 'Erro ao buscar listas.', error: err.message });
+        await client.query('ROLLBACK');
+        console.error('Erro ao criar lista a partir do modelo:', err.stack);
+        res.status(500).json({ message: 'Erro ao criar lista a partir do modelo.', error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
+app.post('/api/listas/save-as-template', async (req, res) => {
+    const { nome_template, lista_original_id } = req.body;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const novoTemplateQuery = 'INSERT INTO listas (nome_lista, is_template) VALUES ($1, true) RETURNING id';
+        const novoTemplateResult = await client.query(novoTemplateQuery, [nome_template]);
+        const novoTemplateId = novoTemplateResult.rows[0].id;
+
+        const itensOriginaisQuery = 'SELECT nome_item, categoria FROM itens_lista WHERE lista_id = $1';
+        const itensOriginaisResult = await client.query(itensOriginaisQuery, [lista_original_id]);
+        const itensParaCopiar = itensOriginaisResult.rows;
+
+        if (itensParaCopiar.length > 0) {
+            const valoresInsert = itensParaCopiar.map(item => `(${novoTemplateId}, '${item.nome_item.replace(/'/g, "''")}', ${item.categoria ? `'${item.categoria.replace(/'/g, "''")}'` : 'NULL'})`).join(',');
+            const insertItensQuery = `INSERT INTO itens_lista (lista_id, nome_item, categoria) VALUES ${valoresInsert}`;
+            await client.query(insertItensQuery);
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json({ id: novoTemplateId, nome_template: nome_template });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Erro ao salvar como modelo:', err.stack);
+        res.status(500).json({ message: 'Erro ao salvar como modelo.', error: err.message });
+    } finally {
+        client.release();
     }
 });
 
@@ -90,7 +162,6 @@ app.put('/api/listas/:listaId/reset', async (req, res) => {
 app.get('/api/listas/:listaId/itens', async (req, res) => {
     const { listaId } = req.params;
     try {
-        // Reativando a ordenação, pois o banco agora está correto
         const query = 'SELECT * FROM itens_lista WHERE lista_id = $1 ORDER BY categoria ASC NULLS FIRST, id';
         const result = await pool.query(query, [listaId]);
         res.status(200).json(result.rows);

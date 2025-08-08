@@ -14,6 +14,19 @@
             <input type="text" id="nova-lista-nome" placeholder="Nome da nova lista...">
             <button id="criar-lista-btn">Criar Lista</button>
         </div>
+
+        <!-- NOVO: Seção para criar a partir de um modelo -->
+        <div class="modelo-container">
+            <h2>Criar a partir de um Modelo</h2>
+            <div class="criar-lista-container">
+                <select id="modelo-select">
+                    <option value="">-- Selecione um Modelo --</option>
+                </select>
+                <input type="text" id="nova-lista-from-modelo-nome" placeholder="Nome da nova lista...">
+                <button id="criar-from-modelo-btn">Criar</button>
+            </div>
+        </div>
+        
         <div class="listas-salvas">
             <h2>Listas Salvas</h2>
             <ul id="listas-salvas-ul"></ul>
@@ -32,8 +45,10 @@
         <div class="lista-container">
             <ul id="itens-lista"></ul>
         </div>
+        <!-- ATUALIZADO: com o novo botão -->
         <div class="acoes-container">
             <button id="voltar-btn">Voltar para Listas</button>
+            <button id="salvar-como-modelo-btn" class="btn-secundario">Salvar como Modelo</button>
             <button id="iniciar-compra-btn">Iniciar Compra</button>
         </div>
     </div>
@@ -41,7 +56,6 @@
     <!-- Vista de Modo de Compra -->
     <div class="container" id="modo-compra" style="display: none;">
         <h1 id="compra-titulo"></h1>
-        <!-- DIV CORRIGIDA COM BOTÃO PRESENTE -->
         <div class="add-item-container-compra">
             <input type="text" id="novo-item-compra" placeholder="Adicionar item de última hora...">
             <button id="adicionar-item-compra-btn">Adicionar</button>
