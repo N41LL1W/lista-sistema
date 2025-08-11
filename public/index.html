@@ -35,16 +35,46 @@
     <!-- Vista de Edição de Lista -->
     <div class="container" id="lista-editor" style="display: none;">
         <h1 id="lista-titulo"></h1>
-        <div class="add-item-container">
-            <input type="text" id="novo-item-lista" placeholder="Adicionar item à lista...">
-            <input type="text" id="nova-categoria-item" list="categorias-sugeridas" placeholder="Categoria (opcional)...">
-            <datalist id="categorias-sugeridas"></datalist>
-            <button id="adicionar-item-lista-btn">Adicionar</button>
+        
+        <!-- Botões para alternar modos de edição -->
+        <div class="modo-botoes">
+            <button id="modo-lista-btn" class="modo-btn ativo">Modo Lista</button>
+            <button id="modo-visual-btn" class="modo-btn">Modo Visual</button>
         </div>
+
+        <!-- Container do modo de edição padrão -->
+        <div id="editor-lista-container">
+            <div class="add-item-container">
+                <input type="text" id="novo-item-lista" placeholder="Adicionar item à lista...">
+                <input type="text" id="nova-categoria-item" list="categorias-sugeridas" placeholder="Categoria (opcional)...">
+                <datalist id="categorias-sugeridas"></datalist>
+                <button id="adicionar-item-lista-btn">Adicionar</button>
+            </div>
+        </div>
+
+        <!-- Container do modo de edição visual (Drag and Drop) -->
+        <div id="editor-visual-container" style="display: none;">
+            <div class="visual-editor-layout">
+                <div class="nuvem-container">
+                    <h3>Sua Despensa (Arraste para adicionar)</h3>
+                    <div id="nuvem-itens"></div>
+                </div>
+                <div class="caixas-container">
+                    <h3>Categorias da Lista</h3>
+                    <div id="caixas-categorias-container"></div>
+                    <div class="add-categoria-caixa-container">
+                        <input type="text" id="nova-caixa-categoria-nome" placeholder="Nova categoria...">
+                        <button id="criar-caixa-categoria-btn">Criar Caixa</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="lista-container">
+            <h2>Itens na Lista</h2>
             <ul id="itens-lista"></ul>
         </div>
-        <!-- ATUALIZADO: com o botão Compartilhar -->
+        
         <div class="acoes-container">
             <button id="voltar-btn">Voltar</button>
             <button id="salvar-como-modelo-btn" class="btn-secundario">Salvar como Modelo</button>

@@ -171,7 +171,7 @@ app.put('/api/listas/:listaId/reset', async (req, res) => {
 });
 
 
-// --- ROTAS DE COMPARTILHAMENTO ---
+// --- ROTA DE COMPARTILHAMENTO ---
 
 app.get('/api/share/:token', async (req, res) => {
     const { token } = req.params;
@@ -266,6 +266,20 @@ app.delete('/api/itens/:itemId', async (req, res) => {
         res.status(500).json({ message: 'Erro ao deletar item.', error: err.message });
     }
 });
+
+// --- ROTA PARA A NUVEM DE PALAVRAS ---
+app.get('/api/itens/unicos', async (req, res) => {
+    try {
+        const query = 'SELECT DISTINCT nome_item FROM itens_lista ORDER BY nome_item ASC';
+        const result = await pool.query(query);
+        const nomesItens = result.rows.map(row => row.nome_item);
+        res.status(200).json(nomesItens);
+    } catch (err) {
+        console.error('Erro ao buscar itens únicos:', err.stack);
+        res.status(500).json({ message: 'Erro ao buscar itens únicos.', error: err.message });
+    }
+});
+
 
 // Inicia o servidor
 app.listen(port, () => {
