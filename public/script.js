@@ -25,8 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const modeloSelect = document.getElementById('modelo-select');
     const novaListaFromModeloNomeInput = document.getElementById('nova-lista-from-modelo-nome');
     const compartilharBtn = document.getElementById('compartilhar-btn');
-
-    // Elementos do Modo Visual
     const modoListaBtn = document.getElementById('modo-lista-btn');
     const modoVisualBtn = document.getElementById('modo-visual-btn');
     const editorListaContainer = document.getElementById('editor-lista-container');
@@ -58,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         listaManager.style.display = 'none';
         listaEditor.style.display = 'block';
         modoCompra.style.display = 'none';
-        alternarModoEdicao('lista'); // Sempre começa no modo lista padrão
+        alternarModoEdicao('lista');
         carregarItensDaLista(listaId);
     };
 
@@ -71,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderizarItensCompra();
         });
     };
-    
+
     const alternarModoEdicao = (modo) => {
         if (modo === 'visual') {
             editorListaContainer.style.display = 'none';
@@ -79,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
             modoListaBtn.classList.remove('ativo');
             modoVisualBtn.classList.add('ativo');
             renderizarModoVisual();
-        } else { // modo 'lista'
+        } else {
             editorListaContainer.style.display = 'block';
             editorVisualContainer.style.display = 'none';
             modoListaBtn.classList.add('ativo');
@@ -139,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-
     const carregarItensDaLista = async (listaId) => {
         mostrarLoader();
         try {
@@ -152,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("A API não retornou um array de itens.", itens);
                 itensAtivos = [];
             }
-            renderizarItensLista(); // Atualiza a lista de texto sempre
+            renderizarItensLista();
         } catch (error) {
             console.error("Erro ao carregar itens da lista:", error);
             itensAtivos = [];
@@ -193,10 +190,54 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const renderizarItensCompra = () => { /* ...código sem alteração... */ };
-    const renderizarTotais = () => { /* ...código sem alteração... */ };
+    const renderizarItensCompra = () => {
+        itensAtivos.sort((a, b) => a.comprado - b.comprado);
+        itensCompraUL.innerHTML = '';
 
-    // --- Lógica de Drag and Drop ---
+        if (itensAtivos.length === 0) {
+            itensCompraUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Sua lista de compras está vazia.</li>';
+        } else {
+            let categoriaAtual = "---";
+            let cabecalhoCompradosAdicionado = false;
+
+            itensAtivos.forEach(item => {
+                if (item.comprado && !cabecalhoCompradosAdicionado) {
+                    const compradoHeader = document.createElement('li');
+                    compradoHeader.className = 'categoria-header comprado-header';
+                    compradoHeader.textContent = 'Itens no Carrinho';
+                    itensCompraUL.appendChild(compradoHeader);
+                    cabecalhoCompradosAdicionado = true;
+                } else if (!item.comprado && item.categoria !== categoriaAtual) {
+                    categoriaAtual = item.categoria;
+                    const categoriaHeader = document.createElement('li');
+                    categoriaHeader.className = 'categoria-header';
+                    categoriaHeader.textContent = categoriaAtual || 'Sem Categoria';
+                    itensCompraUL.appendChild(categoriaHeader);
+                }
+
+                const subtotal = (item.valor_unitario || 0) * (item.quantidade || 1);
+                const li = document.createElement('li');
+                li.className = `lista-item ${item.comprado ? 'comprado' : ''}`;
+                li.dataset.id = item.id;
+                li.innerHTML = `
+                    <div class="item-info"><input type="checkbox" class="item-checkbox" ${item.comprado ? 'checked' : ''}><span class="item-nome">${item.nome_item}</span></div>
+                    <div class="item-detalhes">
+                        <div class="item-inputs"><input type="number" class="valor-input" placeholder="R$" step="0.01" value="${item.valor_unitario || ''}"><span>x</span><input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || 1}"></div>
+                        <span class="item-total">R$ ${subtotal.toFixed(2)}</span>
+                    </div>`;
+                itensCompraUL.appendChild(li);
+            });
+        }
+        renderizarTotais();
+    };
+
+    const renderizarTotais = () => {
+        const totalLista = itensAtivos.reduce((acc, item) => acc + (item.valor_unitario || 0) * (item.quantidade || 1), 0);
+        const totalCarrinho = itensAtivos.reduce((acc, item) => item.comprado ? acc + (item.valor_unitario || 0) * (item.quantidade || 1) : acc, 0);
+        document.getElementById('total-lista').textContent = totalLista.toFixed(2);
+        document.getElementById('total-carrinho').textContent = totalCarrinho.toFixed(2);
+    };
+
     const handleDragStart = (e) => {
         itemArrastado = e.target.textContent;
         e.target.style.opacity = '0.5';
@@ -262,8 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         categoriasAtuais.sort().forEach(categoria => criarCaixaCategoria(categoria));
     };
 
-        // --- Event Listeners ---
-
+    // --- Event Listeners ---
     criarListaBtn.addEventListener('click', () => {
         if (!novaListaNomeInput.value.trim()) return;
         executarAcaoBackend(async () => {
