@@ -240,18 +240,40 @@ app.put('/api/itens/:itemId', async (req, res) => {
     }
 });
 
+// ATUALIZADO: para permitir a edição de nome E/OU categoria
 app.patch('/api/itens/:itemId', async (req, res) => {
     const { itemId } = req.params;
-    const { nome_item } = req.body;
-    if (!nome_item) return res.status(400).json({ message: 'O novo nome do item é obrigatório.' });
+    const { nome_item, categoria } = req.body;
+
+    // Constrói a query dinamicamente para atualizar apenas os campos fornecidos
+    const updates = [];
+    const values = [];
+    let queryIndex = 1;
+
+    if (nome_item) {
+        updates.push(`nome_item = $${queryIndex++}`);
+        values.push(nome_item);
+    }
+    // Permite definir a categoria como nula
+    if (categoria !== undefined) {
+        updates.push(`categoria = $${queryIndex++}`);
+        values.push(categoria === '' ? null : categoria);
+    }
+
+    if (updates.length === 0) {
+        return res.status(400).json({ message: 'Nenhum campo para atualizar foi fornecido.' });
+    }
+
+    values.push(itemId);
+
     try {
-        const query = 'UPDATE itens_lista SET nome_item = $1 WHERE id = $2 RETURNING *';
-        const result = await pool.query(query, [nome_item, itemId]);
+        const query = `UPDATE itens_lista SET ${updates.join(', ')} WHERE id = $${queryIndex} RETURNING *`;
+        const result = await pool.query(query, values);
         if (result.rowCount === 0) return res.status(404).json({ message: 'Item não encontrado.' });
         res.status(200).json(result.rows[0]);
     } catch (err) {
-        console.error('Erro ao renomear item:', err.stack);
-        res.status(500).json({ message: 'Erro ao renomear item.', error: err.message });
+        console.error('Erro ao atualizar item:', err.stack);
+        res.status(500).json({ message: 'Erro ao atualizar item.', error: err.message });
     }
 });
 

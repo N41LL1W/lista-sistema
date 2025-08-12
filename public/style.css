@@ -382,3 +382,29 @@ button:hover {
         flex-direction: column;
     }
 }
+
+.info-item-editavel {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.nome-item-editavel {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.categoria-item-editavel {
+    font-size: 0.9em;
+    color: #6c757d;
+    font-style: italic;
+    cursor: text;
+}
+
+.input-editavel-categoria {
+    font-size: 0.9em;
+    padding: 3px;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+    width: 50%;
+}

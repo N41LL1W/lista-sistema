@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Variáveis de Estado
     let listaAtivaId = null;
     let itensAtivos = [];
-    let itemArrastado = null;
+    // let itemArrastado = null;
 
     // --- Funções de Controle de UI ---
     const mostrarLoader = () => loader.style.display = 'flex';
@@ -173,19 +173,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let categoriaAtual = "---";
         itensAtivos.forEach(item => {
-            if (item.categoria !== categoriaAtual) {
-                categoriaAtual = item.categoria;
-                const categoriaHeader = document.createElement('li');
-                categoriaHeader.className = 'categoria-header';
-                categoriaHeader.textContent = categoriaAtual || 'Sem Categoria';
-                itensListaUL.appendChild(categoriaHeader);
-            }
-
             const li = document.createElement('li');
             li.className = 'item-editavel';
-            li.innerHTML = `<span>${item.nome_item}</span><button class="deletar-item-btn" data-id="${item.id}">Deletar</button>`;
+            li.dataset.itemId = item.id; // Adiciona ID ao <li> para fácil acesso
+            li.innerHTML = `
+                <div class="info-item-editavel">
+                    <span class="nome-item-editavel">${item.nome_item}</span>
+                    <span class="categoria-item-editavel">${item.categoria || 'Sem Categoria'}</span>
+                </div>
+                <button class="deletar-item-btn" data-id="${item.id}">Deletar</button>
+            `;
             itensListaUL.appendChild(li);
         });
     };
@@ -238,44 +236,79 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('total-carrinho').textContent = totalCarrinho.toFixed(2);
     };
 
-    const handleDragStart = (e) => {
-        itemArrastado = e.target.textContent;
-        e.target.style.opacity = '0.5';
-    };
-    const handleDragEnd = (e) => { e.target.style.opacity = '1'; };
-    const handleDragOver = (e) => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); };
-    const handleDragLeave = (e) => { e.currentTarget.classList.remove('drag-over'); };
-    const handleDrop = (e) => {
-        e.preventDefault();
-        e.currentTarget.classList.remove('drag-over');
-        const categoria = e.currentTarget.dataset.categoria || '';
+    // const handleDragStart = (e) => {
+    //     itemArrastado = e.target.textContent;
+    //     e.target.style.opacity = '0.5';
+    // };
+    //const handleDragEnd = (e) => { e.target.style.opacity = '1'; };
+    //const handleDragOver = (e) => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); };
+    //const handleDragLeave = (e) => { e.currentTarget.classList.remove('drag-over'); };
+    // const handleDrop = (e) => {
+    //     e.preventDefault();
+    //     e.currentTarget.classList.remove('drag-over');
+    //     const categoria = e.currentTarget.dataset.categoria || '';
 
-        executarAcaoBackend(async () => {
-            await fetch(`/api/listas/${listaAtivaId}/itens`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome_item: itemArrastado, categoria: categoria })
-            });
-            await carregarItensDaLista(listaAtivaId);
-        });
-    };
+    //     executarAcaoBackend(async () => {
+    //         await fetch(`/api/listas/${listaAtivaId}/itens`, {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({ nome_item: itemArrastado, categoria: categoria })
+    //         });
+    //         await carregarItensDaLista(listaAtivaId);
+    //     });
+    // };
     
     const criarCaixaCategoria = (nomeCategoria) => {
+        const categoriaReal = nomeCategoria || '';
         const caixa = document.createElement('div');
         caixa.className = 'caixa-categoria';
-        caixa.dataset.categoria = nomeCategoria || '';
+        caixa.dataset.categoria = categoriaReal;
         caixa.innerHTML = `<h4>${nomeCategoria || 'Sem Categoria'}</h4>`;
         
-        caixa.addEventListener('dragover', handleDragOver);
-        caixa.addEventListener('dragleave', handleDragLeave);
-        caixa.addEventListener('drop', handleDrop);
-        
         caixasCategoriasContainer.appendChild(caixa);
+
+        // Ativa o SortableJS para esta caixa
+        new Sortable(caixa, {
+            group: 'shared', // Pertence ao mesmo grupo da nuvem
+            animation: 150,
+            onAdd: function (evt) {
+                // Evento disparado quando um item é SOLTO na caixa
+                const nomeItem = evt.item.textContent;
+                const categoriaDestino = evt.to.dataset.categoria;
+                
+                // Remove o elemento clonado que o SortableJS cria
+                evt.item.remove();
+
+                // Adiciona o item à lista via nossa API
+                executarAcaoBackend(async () => {
+                    await fetch(`/api/listas/${listaAtivaId}/itens`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nome_item: nomeItem, categoria: categoriaDestino })
+                    });
+                    await carregarItensDaLista(listaAtivaId);
+                });
+            }
+        });
     };
 
     const renderizarModoVisual = async () => {
+        // Limpa containers
         nuvemItensContainer.innerHTML = '';
         caixasCategoriasContainer.innerHTML = '';
+        
+        // Configuração do SortableJS para a Nuvem de Itens
+        new Sortable(nuvemItensContainer, {
+            group: {
+                name: 'shared', // Itens podem ser movidos deste grupo
+                pull: 'clone',  // Ao arrastar, clona o item em vez de movê-lo
+                put: false      // Não permite que outros itens sejam soltos aqui
+            },
+            animation: 150,
+            sort: false // Não permite reordenar itens dentro da nuvem
+        });
+        
+        // Busca e renderiza a nuvem de itens
         mostrarLoader();
         try {
             const response = await fetch('/api/itens/unicos');
@@ -284,9 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemSpan = document.createElement('span');
                 itemSpan.className = 'item-nuvem';
                 itemSpan.textContent = nomeItem;
-                itemSpan.draggable = true;
-                itemSpan.addEventListener('dragstart', handleDragStart);
-                itemSpan.addEventListener('dragend', handleDragEnd);
                 nuvemItensContainer.appendChild(itemSpan);
             });
         } catch (error) {
@@ -296,6 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
             esconderLoader();
         }
 
+        // Renderiza as caixas de categoria
         const categoriasAtuais = [...new Set(itensAtivos.map(item => item.categoria))];
         if (categoriasAtuais.includes(null) || categoriasAtuais.length === 0) {
             if (!categoriasAtuais.includes(null)) categoriasAtuais.push(null);
@@ -358,27 +389,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ATUALIZADO: para editar nome ou categoria
     itensListaUL.addEventListener('dblclick', (e) => {
-        const span = e.target;
-        if (span.tagName === 'SPAN' && span.closest('.item-editavel')) {
-            const li = span.closest('.item-editavel');
-            const itemId = li.querySelector('.deletar-item-btn').dataset.id;
-            const nomeAtual = span.textContent;
+        const target = e.target;
+        const li = target.closest('.item-editavel');
+        if (!li) return;
+
+        const itemId = li.dataset.itemId;
+        
+        // Se clicou no NOME
+        if (target.classList.contains('nome-item-editavel')) {
+            const nomeAtual = target.textContent;
             const input = document.createElement('input');
             input.type = 'text'; input.value = nomeAtual; input.className = 'input-editavel';
-            span.replaceWith(input); input.focus();
+            target.replaceWith(input); input.focus();
+
             const salvar = () => {
                 const novoNome = input.value.trim();
                 if (novoNome && novoNome !== nomeAtual) {
                     executarAcaoBackend(async () => {
                         await fetch(`/api/itens/${itemId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome_item: novoNome }) });
-                        span.textContent = novoNome;
-                        input.replaceWith(span);
+                        target.textContent = novoNome;
+                        input.replaceWith(target);
                     });
-                } else { input.replaceWith(span); }
+                } else { input.replaceWith(target); }
             };
             input.addEventListener('blur', salvar);
-            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') input.replaceWith(span); });
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') input.replaceWith(target); });
+        }
+
+        // Se clicou na CATEGORIA
+        if (target.classList.contains('categoria-item-editavel')) {
+            const categoriaAtual = target.textContent === 'Sem Categoria' ? '' : target.textContent;
+            const input = document.createElement('input');
+            input.type = 'text'; input.value = categoriaAtual;
+            input.className = 'input-editavel-categoria';
+            input.setAttribute('list', 'categorias-sugeridas'); // Usa o datalist existente
+            target.replaceWith(input); input.focus();
+
+            const salvar = () => {
+                const novaCategoria = input.value.trim();
+                if (novaCategoria !== categoriaAtual) {
+                    executarAcaoBackend(async () => {
+                        await fetch(`/api/itens/${itemId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ categoria: novaCategoria }) });
+                        await carregarItensDaLista(listaAtivaId); // Recarrega tudo para reordenar
+                    });
+                } else {
+                    target.textContent = categoriaAtual || 'Sem Categoria';
+                    input.replaceWith(target);
+                }
+            };
+            input.addEventListener('blur', salvar);
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { target.textContent = categoriaAtual || 'Sem Categoria'; input.replaceWith(target); } });
         }
     });
 
