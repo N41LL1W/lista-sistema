@@ -408,3 +408,77 @@ button:hover {
     border-radius: 4px;
     width: 50%;
 }
+/* --- ESTILOS PARA HISTÓRICO DE PREÇOS --- */
+
+.item-total {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.historico-btn {
+    font-size: 1.2em;
+    cursor: pointer;
+    color: #007bff;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.historico-btn:hover {
+    opacity: 1;
+}
+
+.btn-sucesso {
+    background-color: #28a745; /* Verde */
+}
+.btn-sucesso:hover {
+    background-color: #218838;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: none; /* Começa escondido */
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    width: 400px;
+    max-width: 90%;
+    position: relative;
+}
+.fechar-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 2em;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+}
+.fechar-modal:hover {
+    color: #333;
+}
+#historico-lista-precos {
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
+}
+#historico-lista-precos li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+#historico-lista-precos li span:first-child {
+    font-weight: bold;
+    color: #28a745;
+}

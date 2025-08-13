@@ -34,6 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const novaCaixaCategoriaNomeInput = document.getElementById('nova-caixa-categoria-nome');
     const criarCaixaCategoriaBtn = document.getElementById('criar-caixa-categoria-btn');
 
+    const modalHistorico = document.getElementById('modal-historico');
+    const fecharModalHistoricoBtn = document.getElementById('fechar-modal-historico');
+    const historicoTituloItem = document.getElementById('historico-titulo-item');
+    const historicoListaPrecos = document.getElementById('historico-lista-precos');
+    const finalizarCompraBtn = document.getElementById('finalizar-compra-btn');
+
     // Variáveis de Estado
     let listaAtivaId = null;
     let itensAtivos = [];
@@ -199,29 +205,23 @@ document.addEventListener('DOMContentLoaded', () => {
             let cabecalhoCompradosAdicionado = false;
 
             itensAtivos.forEach(item => {
-                if (item.comprado && !cabecalhoCompradosAdicionado) {
-                    const compradoHeader = document.createElement('li');
-                    compradoHeader.className = 'categoria-header comprado-header';
-                    compradoHeader.textContent = 'Itens no Carrinho';
-                    itensCompraUL.appendChild(compradoHeader);
-                    cabecalhoCompradosAdicionado = true;
-                } else if (!item.comprado && item.categoria !== categoriaAtual) {
-                    categoriaAtual = item.categoria;
-                    const categoriaHeader = document.createElement('li');
-                    categoriaHeader.className = 'categoria-header';
-                    categoriaHeader.textContent = categoriaAtual || 'Sem Categoria';
-                    itensCompraUL.appendChild(categoriaHeader);
-                }
+                if (item.comprado && !cabecalhoCompradosAdicionado) { /* ...código sem alteração... */ }
+                else if (!item.comprado && item.categoria !== categoriaAtual) { /* ...código sem alteração... */ }
 
                 const subtotal = (item.valor_unitario || 0) * (item.quantidade || 1);
                 const li = document.createElement('li');
                 li.className = `lista-item ${item.comprado ? 'comprado' : ''}`;
                 li.dataset.id = item.id;
+                li.dataset.nomeItem = item.nome_item; // Importante para buscar o histórico
+
                 li.innerHTML = `
                     <div class="item-info"><input type="checkbox" class="item-checkbox" ${item.comprado ? 'checked' : ''}><span class="item-nome">${item.nome_item}</span></div>
                     <div class="item-detalhes">
                         <div class="item-inputs"><input type="number" class="valor-input" placeholder="R$" step="0.01" value="${item.valor_unitario || ''}"><span>x</span><input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || 1}"></div>
-                        <span class="item-total">R$ ${subtotal.toFixed(2)}</span>
+                        <div class="item-total">
+                            <span>R$ ${subtotal.toFixed(2)}</span>
+                            <span class="historico-btn" title="Ver histórico de preços">📈</span>
+                        </div>
                     </div>`;
                 itensCompraUL.appendChild(li);
             });
@@ -234,6 +234,38 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalCarrinho = itensAtivos.reduce((acc, item) => item.comprado ? acc + (item.valor_unitario || 0) * (item.quantidade || 1) : acc, 0);
         document.getElementById('total-lista').textContent = totalLista.toFixed(2);
         document.getElementById('total-carrinho').textContent = totalCarrinho.toFixed(2);
+    };
+
+    // --- Funções do Modal de Histórico ---
+    const fecharHistorico = () => {
+        modalHistorico.style.display = 'none';
+    };
+
+    const mostrarHistoricoPrecos = async (nomeItem) => {
+        historicoTituloItem.textContent = `Histórico de: ${nomeItem}`;
+        historicoListaPrecos.innerHTML = '<li>Carregando...</li>';
+        modalHistorico.style.display = 'flex';
+
+        try {
+            const response = await fetch(`/api/itens/historico/${encodeURIComponent(nomeItem)}`);
+            const historico = await response.json();
+
+            historicoListaPrecos.innerHTML = '';
+            if (historico.length === 0) {
+                historicoListaPrecos.innerHTML = '<li>Nenhum preço registrado para este item.</li>';
+            } else {
+                historico.forEach(registro => {
+                    const data = new Date(registro.data_compra).toLocaleDateString('pt-BR');
+                    const preco = parseFloat(registro.valor_unitario).toFixed(2);
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>R$ ${preco}</span> <span>${data}</span>`;
+                    historicoListaPrecos.appendChild(li);
+                });
+            }
+        } catch (error) {
+            console.error("Erro ao buscar histórico:", error);
+            historicoListaPrecos.innerHTML = '<li>Não foi possível carregar o histórico.</li>';
+        }
     };
 
     // const handleDragStart = (e) => {
@@ -386,6 +418,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 await fetch(`/api/itens/${e.target.dataset.id}`, { method: 'DELETE' });
                 await carregarItensDaLista(listaAtivaId);
             });
+        }
+    });
+
+    finalizarCompraBtn.addEventListener('click', () => {
+        const itensParaSalvar = itensAtivos.filter(item => item.comprado && item.valor_unitario > 0);
+        
+        if (itensParaSalvar.length === 0) {
+            alert("Nenhum item com preço foi marcado como comprado para salvar no histórico.");
+            return;
+        }
+
+        if (confirm(`Salvar ${itensParaSalvar.length} item(ns) no seu histórico de preços?`)) {
+            executarAcaoBackend(async () => {
+                await fetch('/api/compras/finalizar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ itensComprados: itensParaSalvar })
+                });
+                alert("Histórico salvo com sucesso!");
+                // Opcional: você pode querer resetar a compra aqui também
+                // await fetch(`/api/listas/${listaAtivaId}/reset`, { method: 'PUT' });
+                // await carregarItensDaLista(listaAtivaId);
+                // renderizarItensCompra();
+            });
+        }
+    });
+
+    // Modifica o listener da lista de compras para também capturar o clique no botão de histórico
+    itensCompraUL.addEventListener('click', (e) => {
+        if (e.target.classList.contains('historico-btn')) {
+            const li = e.target.closest('li');
+            const nomeItem = li.dataset.nomeItem;
+            mostrarHistoricoPrecos(nomeItem);
+        }
+    });
+
+    fecharModalHistoricoBtn.addEventListener('click', fecharHistorico);
+    modalHistorico.addEventListener('click', (e) => {
+        // Fecha o modal se clicar no fundo cinza
+        if (e.target === modalHistorico) {
+            fecharHistorico();
         }
     });
 

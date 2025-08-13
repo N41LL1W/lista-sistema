@@ -302,6 +302,54 @@ app.get('/api/itens/unicos', async (req, res) => {
     }
 });
 
+// --- NOVAS ROTAS PARA HISTÓRICO DE PREÇOS ---
+
+// 1. Rota para finalizar a compra e salvar o histórico
+app.post('/api/compras/finalizar', async (req, res) => {
+    const { itensComprados } = req.body; // Recebe um array de itens do frontend
+
+    if (!itensComprados || itensComprados.length === 0) {
+        return res.status(400).json({ message: 'Nenhum item comprado para registrar.' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        // Prepara uma única query para inserir todos os itens de uma vez (mais eficiente)
+        const query = 'INSERT INTO historico_precos (nome_item, valor_unitario) VALUES ($1, $2)';
+        
+        // Executa a query para cada item comprado
+        for (const item of itensComprados) {
+            await client.query(query, [item.nome_item, item.valor_unitario]);
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json({ message: 'Histórico de compras salvo com sucesso!' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Erro ao salvar histórico de compras:', err.stack);
+        res.status(500).json({ message: 'Erro ao salvar histórico de compras.', error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
+// 2. Rota para buscar o histórico de um item específico
+app.get('/api/itens/historico/:nomeItem', async (req, res) => {
+    try {
+        // decodeURIComponent é importante para tratar nomes com espaços, como "Arroz Integral"
+        const nomeItem = decodeURIComponent(req.params.nomeItem);
+        
+        const query = 'SELECT valor_unitario, data_compra FROM historico_precos WHERE nome_item = $1 ORDER BY data_compra DESC LIMIT 5';
+        const result = await pool.query(query, [nomeItem]);
+        
+        res.status(200).json(result.rows); // Retorna os últimos 5 preços encontrados
+    } catch (err) {
+        console.error('Erro ao buscar histórico do item:', err.stack);
+        res.status(500).json({ message: 'Erro ao buscar histórico do item.', error: err.message });
+    }
+});
+
 
 // Inicia o servidor
 app.listen(port, () => {

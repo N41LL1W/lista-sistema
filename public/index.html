@@ -97,9 +97,11 @@
             <h4>Total no Carrinho: R$ <span id="total-carrinho">0.00</span></h4>
             <h3>Total da Lista: R$ <span id="total-lista">0.00</span></h3>
         </div>
+        <!-- Local: dentro do <div id="modo-compra"> -->
         <div class="acoes-container">
             <button id="voltar-compra-btn">Voltar</button>
             <button id="reset-compra-btn" class="btn-secundario">Limpar Compra</button>
+            <button id="finalizar-compra-btn" class="btn-sucesso">Finalizar Compra</button> <!-- NOVO BOTÃO -->
         </div>
     </div>
 
@@ -107,9 +109,20 @@
     <div id="loader" class="loader-overlay">
         <div class="spinner"></div>
     </div>
-    <!-- NOVO: Biblioteca para Drag and Drop (incluindo mobile) -->
+    <!-- NOVO: Modal para Histórico de Preços -->
+    <div id="modal-historico" class="modal-overlay">
+        <div class="modal-content">
+            <span id="fechar-modal-historico" class="fechar-modal">&times;</span>
+            <h2 id="historico-titulo-item">Histórico de Preços</h2>
+            <ul id="historico-lista-precos">
+                <!-- Preços serão inseridos aqui -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script src="script.js"></script>
+    <script src="share.js"></script> <!-- Se você tiver este arquivo -->
     <script src="script.js"></script>
 </body>
 </html>
