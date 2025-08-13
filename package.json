@@ -20,7 +20,9 @@
   },
   "homepage": "https://github.com/N41LL1W/lista-sistema#readme",
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "express": "^5.1.0",
+    "express-session": "^1.18.2",
     "pg": "^8.16.3"
   }
 }

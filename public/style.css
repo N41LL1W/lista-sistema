@@ -482,3 +482,60 @@ button:hover {
     font-weight: bold;
     color: #28a745;
 }
+/* ... (todo o seu CSS existente) ... */
+
+/* --- ESTILOS DE AUTENTICAÇÃO --- */
+#auth-container {
+    padding-top: 50px;
+}
+
+#auth-container .container {
+    width: 400px;
+    max-width: 90%;
+}
+
+#auth-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#auth-container input {
+    width: 100%;
+    box-sizing: border-box; /* Garante que padding não afete a largura */
+}
+
+#auth-container p {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.feedback-msg {
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    display: none; /* Começa escondido */
+}
+.feedback-msg.erro {
+    background-color: #f8d7da;
+    color: #721c24;
+    display: block;
+}
+.feedback-msg.sucesso {
+    background-color: #d4edda;
+    color: #155724;
+    display: block;
+}
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    max-width: 600px;
+    margin: 0 auto 20px auto;
+}
