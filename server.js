@@ -117,16 +117,27 @@ app.get('/api/listas', isAuth, async (req, res) => {
     }
 });
 
+// Local: /server.js
+
 app.post('/api/listas', isAuth, async (req, res) => {
     const { nome_lista } = req.body;
-    const usuario_id = req.session.usuario_id;
+    const usuario_id = req.session.usuario_id; // Pega o ID do usuário da sessão
+
+    if (!nome_lista || !nome_lista.trim()) {
+        return res.status(400).json({ message: 'O nome da lista não pode ser vazio.' });
+    }
+
     try {
-        const query = 'INSERT INTO listas (nome_lista, is_template, usuario_id) VALUES ($1, false, $2) RETURNING id, nome_lista';
-        const result = await pool.query(query, [nome_lista, usuario_id]);
+        // QUERY CORRIGIDA: Insere o nome da lista e o ID do usuário
+        const query = 'INSERT INTO listas (nome_lista, usuario_id) VALUES ($1, $2) RETURNING id, nome_lista';
+        
+        // PARÂMETROS CORRIGIDOS: Passa os valores na ordem correta
+        const result = await pool.query(query, [nome_lista.trim(), usuario_id]);
+        
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('Erro ao criar lista:', err.stack);
-        res.status(500).json({ message: 'Erro ao criar lista.' });
+        res.status(500).json({ message: 'Erro interno ao criar a lista.' });
     }
 });
 
