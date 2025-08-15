@@ -89,21 +89,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        console.log("1. Botão de login clicado, handleLogin iniciada."); // Ponto de verificação 1
+
         const email = loginEmailInput.value;
         const senha = loginSenhaInput.value;
+        mostrarFeedback(loginFeedback, 'Verificando...', 'info');
+
         try {
+            console.log("2. Enviando requisição para /api/auth/login..."); // Ponto de verificação 2
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, senha })
             });
+
+            console.log("3. Resposta recebida do servidor com status:", response.status); // Ponto de verificação 3
             const data = await response.json();
+            console.log("4. Dados da resposta:", data); // Ponto de verificação 4
+
             if (!response.ok) {
+                console.log("5a. A resposta NÃO foi OK. Lançando erro."); // Ponto de verificação 5a
                 throw new Error(data.message);
             }
-            verificarStatusLogin();
+            
+            console.log("5b. A resposta FOI OK. Tentando iniciar a aplicação..."); // Ponto de verificação 5b
+            authContainer.style.display = 'none';
+            appContainer.style.display = 'block';
+            usuarioLogadoSpan.textContent = data.usuario.email;
+            iniciarAppPrincipal();
+            console.log("6. Aplicação iniciada com sucesso!"); // Ponto de verificação 6
+
         } catch (error) {
-            mostrarFeedback(loginFeedback, error.message);
+            console.error("ERRO no bloco catch do handleLogin:", error); // Ponto de verificação de erro
+            mostrarFeedback(loginFeedback, error.message, 'erro');
         }
     };
 
