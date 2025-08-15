@@ -16,7 +16,11 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+
 // --- CONFIGURAÇÃO DA SESSÃO ---
+
+app.set('trust proxy', 1); // ADICIONE ESTA LINHA. Ela informa ao Express para confiar no proxy da Vercel.
+
 app.use(session({
     secret: process.env.SESSION_SECRET || 'um-segredo-muito-forte-para-desenvolvimento',
     resave: false,
@@ -28,6 +32,7 @@ app.use(session({
         sameSite: 'lax'
     }
 }));
+
 
 // --- MIDDLEWARE DE AUTENTICAÇÃO ---
 const isAuth = (req, res, next) => {

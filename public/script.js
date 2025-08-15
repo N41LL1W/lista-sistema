@@ -217,9 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mostrarLoader();
             try {
                 const response = await fetch('/api/listas');
-                //if (response.status === 401) return handleLogout();
-                // Adicione um log para vermos o status da resposta
-                console.log('Status da resposta de /api/listas:', response.status);
+                if (response.status === 401) return handleLogout();
                 if (!response.ok) throw new Error(`Erro do servidor: ${response.status}`);
                 const data = await response.json();
                 renderizarListasEModelos(data);
