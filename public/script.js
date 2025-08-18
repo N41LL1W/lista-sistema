@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- INÍCIO DA LÓGICA DA APLICAÇÃO PRINCIPAL ---
-    const iniciarAppPrincipal = () => {
+const iniciarAppPrincipal = () => {
         // --- Funções de Controle de UI ---
         const mostrarLoader = () => loader.style.display = 'flex';
         const esconderLoader = () => loader.style.display = 'none';
@@ -199,7 +199,21 @@ document.addEventListener('DOMContentLoaded', () => {
             modoCompra.style.display = 'block';
             carregarItensDaLista(listaAtivaId).then(() => renderizarItensCompra());
         };
-        
+        const alternarModoEdicao = (modo) => {
+            if (modo === 'visual') {
+                editorListaContainer.style.display = 'none';
+                editorVisualContainer.style.display = 'block';
+                modoListaBtn.classList.remove('ativo');
+                modoVisualBtn.classList.add('ativo');
+                renderizarModoVisual();
+            } else {
+                editorListaContainer.style.display = 'block';
+                editorVisualContainer.style.display = 'none';
+                modoListaBtn.classList.add('ativo');
+                modoVisualBtn.classList.remove('ativo');
+            }
+        };
+
         // --- Funções de Lógica e API ---
         const executarAcaoBackend = async (acao) => {
             mostrarLoader();
@@ -212,7 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 esconderLoader();
             }
         };
-
         const carregarListas = async () => {
             mostrarLoader();
             try {
@@ -227,7 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 esconderLoader();
             }
         };
-
         const carregarItensDaLista = async (listaId) => {
             mostrarLoader();
             try {
