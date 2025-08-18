@@ -284,7 +284,8 @@ const iniciarAppPrincipal = () => {
                 });
             }
         };
-                const renderizarItensLista = () => {
+
+        const renderizarItensLista = () => {
             itensListaUL.innerHTML = '';
             iniciarCompraBtn.disabled = itensAtivos.length === 0;
 
