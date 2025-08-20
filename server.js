@@ -16,23 +16,19 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-
 // --- CONFIGURAÇÃO DA SESSÃO ---
-
-app.set('trust proxy', 1); // ADICIONE ESTA LINHA. Ela informa ao Express para confiar no proxy da Vercel.
-
+app.set('trust proxy', 1);
 app.use(session({
     secret: process.env.SESSION_SECRET || 'um-segredo-muito-forte-para-desenvolvimento',
     resave: false,
     saveUninitialized: false,
     cookie: { 
         secure: process.env.NODE_ENV === 'production', 
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 dias
+        maxAge: 1000 * 60 * 60 * 24 * 7,
         httpOnly: true,
         sameSite: 'lax'
     }
 }));
-
 
 // --- MIDDLEWARE DE AUTENTICAÇÃO ---
 const isAuth = (req, res, next) => {
@@ -62,7 +58,6 @@ app.post('/api/auth/registrar', async (req, res) => {
         res.status(500).json({ message: 'Erro ao registrar usuário.' });
     }
 });
-
 app.post('/api/auth/login', async (req, res) => {
     const { email, senha } = req.body;
     try {
@@ -85,7 +80,6 @@ app.post('/api/auth/login', async (req, res) => {
         res.status(500).json({ message: 'Erro ao fazer login.' });
     }
 });
-
 app.post('/api/auth/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
@@ -95,7 +89,6 @@ app.post('/api/auth/logout', (req, res) => {
         res.status(200).json({ message: 'Logout bem-sucedido.' });
     });
 });
-
 app.get('/api/auth/status', (req, res) => {
     if (req.session.isAuth) {
         res.status(200).json({ logado: true, usuario: { id: req.session.usuario_id, email: req.session.usuario_email } });
@@ -104,10 +97,7 @@ app.get('/api/auth/status', (req, res) => {
     }
 });
 
-
-// --- ROTAS DA APLICAÇÃO (PROTEGIDAS) ---
-
-// --- ROTAS DE LISTAS ---
+// --- ROTAS DE LISTAS (PROTEGIDAS) ---
 app.get('/api/listas', isAuth, async (req, res) => {
     const usuario_id = req.session.usuario_id;
     try {
@@ -121,31 +111,18 @@ app.get('/api/listas', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar listas.' });
     }
 });
-
-// Local: /server.js
-
 app.post('/api/listas', isAuth, async (req, res) => {
     const { nome_lista } = req.body;
-    const usuario_id = req.session.usuario_id; // Pega o ID do usuário da sessão
-
-    if (!nome_lista || !nome_lista.trim()) {
-        return res.status(400).json({ message: 'O nome da lista não pode ser vazio.' });
-    }
-
+    const usuario_id = req.session.usuario_id;
     try {
-        // QUERY CORRIGIDA: Insere o nome da lista e o ID do usuário
         const query = 'INSERT INTO listas (nome_lista, usuario_id) VALUES ($1, $2) RETURNING id, nome_lista';
-        
-        // PARÂMETROS CORRIGIDOS: Passa os valores na ordem correta
         const result = await pool.query(query, [nome_lista.trim(), usuario_id]);
-        
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('Erro ao criar lista:', err.stack);
         res.status(500).json({ message: 'Erro interno ao criar a lista.' });
     }
 });
-
 app.post('/api/listas/from-template', isAuth, async (req, res) => {
     const { nome_nova_lista, template_id } = req.body;
     const usuario_id = req.session.usuario_id;
@@ -173,7 +150,6 @@ app.post('/api/listas/from-template', isAuth, async (req, res) => {
         client.release();
     }
 });
-
 app.post('/api/listas/save-as-template', isAuth, async (req, res) => {
     const { nome_template, lista_original_id } = req.body;
     const usuario_id = req.session.usuario_id;
@@ -201,7 +177,6 @@ app.post('/api/listas/save-as-template', isAuth, async (req, res) => {
         client.release();
     }
 });
-
 app.get('/api/listas/:listaId/token', isAuth, async (req, res) => {
     const { listaId } = req.params;
     const usuario_id = req.session.usuario_id;
@@ -217,20 +192,17 @@ app.get('/api/listas/:listaId/token', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Erro ao obter token.' });
     }
 });
-
 app.delete('/api/listas/:listaId', isAuth, async (req, res) => {
     const { listaId } = req.params;
     const usuario_id = req.session.usuario_id;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        // Primeiro, verifica se a lista pertence ao usuário
         const checkOwnerQuery = 'SELECT id FROM listas WHERE id = $1 AND usuario_id = $2';
         const ownerResult = await client.query(checkOwnerQuery, [listaId, usuario_id]);
         if (ownerResult.rowCount === 0) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
-        // Se pertence, deleta os itens e a lista
         await client.query('DELETE FROM itens_lista WHERE lista_id = $1', [listaId]);
         await client.query('DELETE FROM listas WHERE id = $1', [listaId]);
         await client.query('COMMIT');
@@ -243,9 +215,37 @@ app.delete('/api/listas/:listaId', isAuth, async (req, res) => {
         client.release();
     }
 });
+app.put('/api/listas/:listaId/reset', isAuth, async (req, res) => {
+    const { listaId } = req.params;
+    const usuario_id = req.session.usuario_id;
+    try {
+        const query = 'UPDATE itens_lista SET comprado = false, valor_unitario = NULL, quantidade = 1 WHERE lista_id = $1 AND lista_id IN (SELECT id FROM listas WHERE usuario_id = $2) RETURNING *';
+        const result = await pool.query(query, [listaId, usuario_id]);
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Erro ao resetar a lista:', err.stack);
+        res.status(500).json({ message: 'Erro ao resetar a lista.' });
+    }
+});
+app.post('/api/listas/:listaId/limpar-comprados', isAuth, async (req, res) => {
+    const { listaId } = req.params;
+    const usuario_id = req.session.usuario_id;
+    try {
+        const checkOwnerQuery = 'SELECT id FROM listas WHERE id = $1 AND usuario_id = $2';
+        const ownerResult = await pool.query(checkOwnerQuery, [listaId, usuario_id]);
+        if (ownerResult.rowCount === 0) {
+            return res.status(403).json({ message: 'Acesso negado.' });
+        }
+        const deleteQuery = 'DELETE FROM itens_lista WHERE lista_id = $1 AND comprado = true';
+        await pool.query(deleteQuery, [listaId]);
+        res.status(200).json({ message: 'Itens comprados foram limpos da lista.' });
+    } catch (err) {
+        console.error('Erro ao limpar itens comprados:', err.stack);
+        res.status(500).json({ message: 'Erro ao limpar itens comprados.' });
+    }
+});
 
 // --- ROTAS DE ITENS (PROTEGIDAS) ---
-
 app.get('/api/listas/:listaId/itens', isAuth, async (req, res) => {
     const { listaId } = req.params;
     const usuario_id = req.session.usuario_id;
@@ -258,19 +258,16 @@ app.get('/api/listas/:listaId/itens', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar itens.' });
     }
 });
-
 app.post('/api/listas/:listaId/itens', isAuth, async (req, res) => {
     const { listaId } = req.params;
     const { nome_item, categoria } = req.body;
     const usuario_id = req.session.usuario_id;
     try {
-        // Verifica se a lista pertence ao usuário antes de inserir
         const checkOwnerQuery = 'SELECT id FROM listas WHERE id = $1 AND usuario_id = $2';
         const ownerResult = await pool.query(checkOwnerQuery, [listaId, usuario_id]);
         if (ownerResult.rowCount === 0) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
-
         const categoriaParaSalvar = categoria && categoria.trim() !== '' ? categoria.trim() : null;
         const query = 'INSERT INTO itens_lista (lista_id, nome_item, categoria) VALUES ($1, $2, $3) RETURNING *';
         const result = await pool.query(query, [listaId, nome_item, categoriaParaSalvar]);
@@ -280,11 +277,25 @@ app.post('/api/listas/:listaId/itens', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Erro ao adicionar item.' });
     }
 });
-
+app.put('/api/itens/:itemId', isAuth, async (req, res) => {
+    const { itemId } = req.params;
+    const { valor_unitario, quantidade, comprado } = req.body;
+    const usuario_id = req.session.usuario_id;
+    try {
+        const query = 'UPDATE itens_lista SET valor_unitario = $1, quantidade = $2, comprado = $3 WHERE id = $4 AND lista_id IN (SELECT id FROM listas WHERE usuario_id = $5) RETURNING *';
+        const result = await pool.query(query, [valor_unitario, quantidade, comprado, itemId, usuario_id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Item não encontrado ou acesso negado.' });
+        }
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error('Erro ao atualizar item:', err.stack);
+        res.status(500).json({ message: 'Erro ao atualizar item.' });
+    }
+});
 app.patch('/api/itens/:itemId', isAuth, async (req, res) => {
     const { itemId } = req.params;
     const { nome_item, categoria } = req.body;
-    // (A lógica de query dinâmica já lida com os campos, agora precisamos verificar a posse)
     const updates = [];
     const values = [];
     let queryIndex = 1;
@@ -301,7 +312,6 @@ app.patch('/api/itens/:itemId', isAuth, async (req, res) => {
     }
     values.push(itemId, req.session.usuario_id);
     try {
-        // Query complexa que garante que o item a ser atualizado pertence a uma lista do usuário logado
         const query = `UPDATE itens_lista SET ${updates.join(', ')} WHERE id = $${queryIndex} AND lista_id IN (SELECT id FROM listas WHERE usuario_id = $${queryIndex + 1}) RETURNING *`;
         const result = await pool.query(query, values);
         if (result.rowCount === 0) return res.status(404).json({ message: 'Item não encontrado ou acesso negado.' });
@@ -311,7 +321,6 @@ app.patch('/api/itens/:itemId', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Erro ao atualizar item.' });
     }
 });
-
 app.delete('/api/itens/:itemId', isAuth, async (req, res) => {
     const { itemId } = req.params;
     const usuario_id = req.session.usuario_id;
@@ -327,35 +336,8 @@ app.delete('/api/itens/:itemId', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Erro ao deletar item.' });
     }
 });
-// --- NOVO: Rota para deletar todos os itens comprados de uma lista ---
-app.post('/api/listas/:listaId/limpar-comprados', isAuth, async (req, res) => {
-    const { listaId } = req.params;
-    const usuario_id = req.session.usuario_id;
-
-    try {
-        // Primeiro, garantimos que a lista pertence ao usuário logado
-        const checkOwnerQuery = 'SELECT id FROM listas WHERE id = $1 AND usuario_id = $2';
-        const ownerResult = await pool.query(checkOwnerQuery, [listaId, usuario_id]);
-
-        if (ownerResult.rowCount === 0) {
-            return res.status(403).json({ message: 'Acesso negado. A lista não pertence a este usuário.' });
-        }
-
-        // Se a verificação passar, deleta os itens comprados daquela lista
-        const deleteQuery = 'DELETE FROM itens_lista WHERE lista_id = $1 AND comprado = true';
-        await pool.query(deleteQuery, [listaId]);
-        
-        res.status(200).json({ message: 'Itens comprados foram limpos da lista.' });
-
-    } catch (err) {
-        console.error('Erro ao limpar itens comprados:', err.stack);
-        res.status(500).json({ message: 'Erro ao limpar itens comprados.', error: err.message });
-    }
-});
-
 
 // --- ROTAS DE HISTÓRICO E COMPRA (PROTEGIDAS) ---
-
 app.post('/api/compras/finalizar', isAuth, async (req, res) => {
     const { itensComprados } = req.body;
     const usuario_id = req.session.usuario_id;
@@ -379,7 +361,6 @@ app.post('/api/compras/finalizar', isAuth, async (req, res) => {
         client.release();
     }
 });
-
 app.get('/api/itens/historico/:nomeItem', isAuth, async (req, res) => {
     const usuario_id = req.session.usuario_id;
     try {
@@ -393,9 +374,7 @@ app.get('/api/itens/historico/:nomeItem', isAuth, async (req, res) => {
     }
 });
 
-
-// --- ROTAS PÚBLICAS (COMPARTILHAMENTO E NUVEM DE PALAVRAS) ---
-
+// --- ROTAS PÚBLICAS ---
 app.get('/api/share/:token', async (req, res) => {
     const { token } = req.params;
     try {
@@ -416,9 +395,6 @@ app.get('/api/share/:token', async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar lista compartilhada.' });
     }
 });
-
-// Nota: A nuvem de palavras é baseada nos itens de TODOS os usuários.
-// Se quiséssemos uma nuvem pessoal, adicionaríamos `isAuth` e `WHERE usuario_id = ...`
 app.get('/api/itens/unicos', async (req, res) => {
     try {
         const query = 'SELECT DISTINCT nome_item FROM itens_lista ORDER BY nome_item ASC';
@@ -430,7 +406,6 @@ app.get('/api/itens/unicos', async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar itens únicos.' });
     }
 });
-
 
 // Inicia o servidor
 app.listen(port, () => {
