@@ -41,7 +41,7 @@
         
         <!-- Vista Principal: Gerenciador de Listas -->
         <div class="container" id="lista-manager">
-            <h1>Gerenciar Listas - Versão 2.1</h1>
+            <h1>Gerenciar Listas - Versão 2.2</h1>
             <div class="criar-lista-container">
                 <input type="text" id="nova-lista-nome" placeholder="Nome da nova lista...">
                 <button id="criar-lista-btn">Criar Lista</button>
@@ -49,6 +49,12 @@
     
             <div class="modelo-container">
                 <h2>Criar a partir de um Modelo</h2>
+                
+                <!-- Lista de Modelos Salvos (NOVO) -->
+                <div class="listas-salvas">
+                    <ul id="modelos-salvos-ul"></ul>
+                </div>
+                
                 <div class="criar-lista-container">
                     <select id="modelo-select">
                         <option value="">-- Selecione um Modelo --</option>
