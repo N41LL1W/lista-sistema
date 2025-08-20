@@ -10,14 +10,15 @@ Bem-vindo ao Sistema de Listas de Compras Inteligente! Esta é uma aplicação w
 O sistema foi construído de forma incremental, adicionando funcionalidades ricas para o usuário:
 
 *   **🔐 Autenticação de Usuários:** Crie sua conta e faça login para gerenciar suas listas de forma privada e segura. As sessões são persistentes, mantendo você logado.
-*   **📝 Gerenciamento Completo (CRUD):** Crie, renomeie, abra e delete listas e itens com facilidade através de duplo-clique para edição.
-*   **📂 Organização por Categorias:** Agrupe itens por categorias (Hortifruti, Laticínios, Limpeza) para otimizar sua rota no supermercado.
+*   **📝 Gerenciamento Completo (CRUD):** Crie, renomeie (com duplo-clique), abra e delete listas, itens e **modelos** com facilidade.
+*   **📂 Organização por Categorias:** Agrupe itens por categorias (Hortifruti, Laticínios, Limpeza) para otimizar sua rota no supermercado. É possível editar a categoria de um item a qualquer momento.
 *   **🖱️ Modo Visual com Drag-and-Drop:** Adicione itens à sua lista de forma interativa, arrastando-os de uma "despensa" de itens comuns para as caixas de categoria.
 *   **📱 Suporte Mobile:** A interface é totalmente responsiva, e o modo de arrastar e soltar funciona perfeitamente com o toque na tela.
 *   **💸 Acompanhamento de Compras:** Durante a compra, insira preços e quantidades, marque itens como "comprados" e veja o total do seu carrinho ser calculado em tempo real.
 *   **📈 Histórico de Preços:** Salve suas compras finalizadas e consulte o histórico de preços de cada produto para saber se está fazendo um bom negócio.
 *   **🔄 Modelos Reutilizáveis (Templates):** Salve listas recorrentes (como "Compras do Mês") como modelos e crie novas listas a partir deles com um único clique.
 *   **🔗 Compartilhamento Simples:** Gere um link de compartilhamento (somente visualização) para qualquer lista e envie para familiares ou amigos.
+*   **🧹 Limpeza Inteligente:** Após a compra, limpe apenas os itens marcados como "comprados" da sua lista, ou resete todos os preços e quantidades para uma nova compra com a mesma lista.
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -82,7 +83,7 @@ Para rodar este projeto no seu ambiente de desenvolvimento, siga os passos abaix
 O projeto tem uma base sólida para crescer ainda mais. Algumas ideias para o futuro incluem:
 *   **Padronização de Produtos:** Criar uma base de dados de produtos padronizados para permitir análises de preço entre usuários.
 *   **Análise de Preços da Comunidade:** Mostrar a média de preço de um produto com base nos dados de todos os usuários.
-*   **Notificações:** Enviar lembretes ou notificações sobre promoções.
+*   **Colaboração em Tempo Real:** Permitir que múltiplos usuários editem a mesma lista simultaneamente.
 
 ---
 _Este projeto foi desenvolvido com o auxílio do Gemini, uma IA do Google._
