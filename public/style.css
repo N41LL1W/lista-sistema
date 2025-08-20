@@ -553,3 +553,11 @@ button:hover {
     padding: 5px 10px;
     font-size: 1.2em;
 }
+/* --- ESTILO PARA BOTÃO DE PERIGO --- */
+.btn-perigo {
+    background-color: #dc3545; /* Vermelho */
+}
+
+.btn-perigo:hover {
+    background-color: #c82333;
+}

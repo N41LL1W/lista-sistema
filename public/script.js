@@ -47,15 +47,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const voltarCompraBtn = document.getElementById("voltar-compra-btn");
   const resetCompraBtn = document.getElementById("reset-compra-btn");
   const finalizarCompraBtn = document.getElementById("finalizar-compra-btn");
+  const limparMarcadosBtn = document.getElementById("limpar-marcados-btn");
   const salvarComoModeloBtn = document.getElementById("salvar-como-modelo-btn");
   const criarFromModeloBtn = document.getElementById("criar-from-modelo-btn");
   const modeloSelect = document.getElementById("modelo-select");
   const novaListaFromModeloNomeInput = document.getElementById(
     "nova-lista-from-modelo-nome"
   );
-  //MODIFICAÇÃO: Adicionado novo seletor para o nome da nova lista a partir do modelo
-  const modelosSalvosUL = document.getElementById('modelos-salvos-ul');
-
+  const modelosSalvosUL = document.getElementById("modelos-salvos-ul");
   const compartilharBtn = document.getElementById("compartilhar-btn");
   const modoListaBtn = document.getElementById("modo-lista-btn");
   const modoVisualBtn = document.getElementById("modo-visual-btn");
@@ -295,44 +294,47 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- Funções de Renderização ---
     //MODIFICAÇÃO: Renderiza listas e modelos salvos
     const renderizarListasEModelos = (data) => {
-        // Renderiza as listas normais (código sem alteração)
-        listasSalvasUL.innerHTML = '';
-        if (data.listas.length === 0) {
-            listasSalvasUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Nenhuma lista salva. Crie uma!</li>';
-        } else {
-            data.listas.forEach(lista => {
-                const li = document.createElement('li');
-                li.innerHTML = `<span class="nome-lista-salva">${lista.nome_lista}</span><div class="botoes-lista"><button class="abrir-lista-btn" data-id="${lista.id}" data-nome="${lista.nome_lista}">Abrir</button><button class="deletar-lista-btn" data-id="${lista.id}">Deletar</button></div>`;
-                listasSalvasUL.appendChild(li);
-            });
-        }
+      // Renderiza as listas normais (código sem alteração)
+      listasSalvasUL.innerHTML = "";
+      if (data.listas.length === 0) {
+        listasSalvasUL.innerHTML =
+          '<li style="color: #6c757d; font-style: italic;">Nenhuma lista salva. Crie uma!</li>';
+      } else {
+        data.listas.forEach((lista) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<span class="nome-lista-salva">${lista.nome_lista}</span><div class="botoes-lista"><button class="abrir-lista-btn" data-id="${lista.id}" data-nome="${lista.nome_lista}">Abrir</button><button class="deletar-lista-btn" data-id="${lista.id}">Deletar</button></div>`;
+          listasSalvasUL.appendChild(li);
+        });
+      }
 
-        // Renderiza os modelos na lista visual E no dropdown
-        modeloSelect.innerHTML = '<option value="">-- Selecione um Modelo --</option>';
-        modelosSalvosUL.innerHTML = ''; // Limpa a lista visual de modelos
+      // Renderiza os modelos na lista visual E no dropdown
+      modeloSelect.innerHTML =
+        '<option value="">-- Selecione um Modelo --</option>';
+      modelosSalvosUL.innerHTML = ""; // Limpa a lista visual de modelos
 
-        if (data.templates.length === 0) {
-            modelosSalvosUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Nenhum modelo salvo.</li>';
-        } else {
-            data.templates.forEach(template => {
-                // Adiciona à lista visual com botão de deletar
-                const li = document.createElement('li');
-                li.className = 'modelo-item'; // Classe para estilização
-                li.innerHTML = `
+      if (data.templates.length === 0) {
+        modelosSalvosUL.innerHTML =
+          '<li style="color: #6c757d; font-style: italic;">Nenhum modelo salvo.</li>';
+      } else {
+        data.templates.forEach((template) => {
+          // Adiciona à lista visual com botão de deletar
+          const li = document.createElement("li");
+          li.className = "modelo-item"; // Classe para estilização
+          li.innerHTML = `
                     <span class="nome-lista-salva">${template.nome_lista}</span>
                     <div class="botoes-lista">
                         <button class="deletar-lista-btn" data-id="${template.id}" title="Deletar este modelo">🗑️</button>
                     </div>
                 `;
-                modelosSalvosUL.appendChild(li);
+          modelosSalvosUL.appendChild(li);
 
-                // Adiciona ao menu dropdown <select>
-                const option = document.createElement('option');
-                option.value = template.id;
-                option.textContent = template.nome_lista;
-                modeloSelect.appendChild(option);
-            });
-        }
+          // Adiciona ao menu dropdown <select>
+          const option = document.createElement("option");
+          option.value = template.id;
+          option.textContent = template.nome_lista;
+          modeloSelect.appendChild(option);
+        });
+      }
     };
     const renderizarItensLista = () => {
       itensListaUL.innerHTML = "";
@@ -818,6 +820,30 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
+    limparMarcadosBtn.addEventListener("click", () => {
+      const itensMarcados = itensAtivos.filter((item) => item.comprado);
+      if (itensMarcados.length === 0) {
+        alert("Nenhum item foi marcado como comprado para ser limpo.");
+        return;
+      }
+
+      if (
+        confirm(
+          `Você tem certeza que deseja remover permanentemente os ${itensMarcados.length} item(ns) marcados desta lista?`
+        )
+      ) {
+        executarAcaoBackend(async () => {
+          await fetch(`/api/listas/${listaAtivaId}/limpar-comprados`, {
+            method: "POST",
+          });
+
+          // Atualiza a visualização no frontend removendo os itens
+          itensAtivos = itensAtivos.filter((item) => !item.comprado);
+          renderizarItensCompra(); // Re-renderiza a lista de compra
+        });
+      }
+    });
+
     salvarComoModeloBtn.addEventListener("click", () => {
       const nomeTemplate = prompt(
         "Digite um nome para este modelo:",
@@ -869,22 +895,26 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-//MODIFICAÇÃO: Adiciona listener para deletar modelos salvos
-    modelosSalvosUL.addEventListener('click', (e) => {
+    //MODIFICAÇÃO: Adiciona listener para deletar modelos salvos
+    modelosSalvosUL.addEventListener("click", (e) => {
       const target = e.target;
       // Reutilizamos a classe 'deletar-lista-btn' e a lógica
-      if (target.classList.contains('deletar-lista-btn')) {
-          if (confirm('Deletar este modelo permanentemente? Esta ação não pode ser desfeita.')) {
-              const listaId = target.dataset.id;
-              executarAcaoBackend(async () => {
-                  // Chama a mesma API de deletar lista
-                  await fetch(`/api/listas/${listaId}`, { method: 'DELETE' });
-                  // Recarrega tudo para atualizar ambas as listas e o dropdown
-                  await carregarListas();
-              });
-          }
+      if (target.classList.contains("deletar-lista-btn")) {
+        if (
+          confirm(
+            "Deletar este modelo permanentemente? Esta ação não pode ser desfeita."
+          )
+        ) {
+          const listaId = target.dataset.id;
+          executarAcaoBackend(async () => {
+            // Chama a mesma API de deletar lista
+            await fetch(`/api/listas/${listaId}`, { method: "DELETE" });
+            // Recarrega tudo para atualizar ambas as listas e o dropdown
+            await carregarListas();
+          });
+        }
       }
-  });
+    });
 
     compartilharBtn.addEventListener("click", () => {
       executarAcaoBackend(async () => {

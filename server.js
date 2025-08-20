@@ -327,6 +327,31 @@ app.delete('/api/itens/:itemId', isAuth, async (req, res) => {
         res.status(500).json({ message: 'Erro ao deletar item.' });
     }
 });
+// --- NOVO: Rota para deletar todos os itens comprados de uma lista ---
+app.post('/api/listas/:listaId/limpar-comprados', isAuth, async (req, res) => {
+    const { listaId } = req.params;
+    const usuario_id = req.session.usuario_id;
+
+    try {
+        // Primeiro, garantimos que a lista pertence ao usuário logado
+        const checkOwnerQuery = 'SELECT id FROM listas WHERE id = $1 AND usuario_id = $2';
+        const ownerResult = await pool.query(checkOwnerQuery, [listaId, usuario_id]);
+
+        if (ownerResult.rowCount === 0) {
+            return res.status(403).json({ message: 'Acesso negado. A lista não pertence a este usuário.' });
+        }
+
+        // Se a verificação passar, deleta os itens comprados daquela lista
+        const deleteQuery = 'DELETE FROM itens_lista WHERE lista_id = $1 AND comprado = true';
+        await pool.query(deleteQuery, [listaId]);
+        
+        res.status(200).json({ message: 'Itens comprados foram limpos da lista.' });
+
+    } catch (err) {
+        console.error('Erro ao limpar itens comprados:', err.stack);
+        res.status(500).json({ message: 'Erro ao limpar itens comprados.', error: err.message });
+    }
+});
 
 
 // --- ROTAS DE HISTÓRICO E COMPRA (PROTEGIDAS) ---
