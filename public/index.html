@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Listas de Compras</title>
+    <title>Gerenciador de Listas de Compras - versão 1.0</title>
+    <!-- NOVO: Estilos para a biblioteca de autocompletar -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -41,7 +43,7 @@
         
         <!-- Vista Principal: Gerenciador de Listas -->
         <div class="container" id="lista-manager">
-            <h1>Gerenciar Listas - Versão 2.4</h1>
+            <h1>Gerenciar Listas</h1>
             <div class="criar-lista-container">
                 <input type="text" id="nova-lista-nome" placeholder="Nome da nova lista...">
                 <button id="criar-lista-btn">Criar Lista</button>
@@ -49,12 +51,9 @@
     
             <div class="modelo-container">
                 <h2>Criar a partir de um Modelo</h2>
-                
-                <!-- Lista de Modelos Salvos (NOVO) -->
                 <div class="listas-salvas">
                     <ul id="modelos-salvos-ul"></ul>
                 </div>
-                
                 <div class="criar-lista-container">
                     <select id="modelo-select">
                         <option value="">-- Selecione um Modelo --</option>
@@ -74,34 +73,11 @@
         <div class="container" id="lista-editor" style="display: none;">
             <h1 id="lista-titulo"></h1>
             
-            <div class="modo-botoes">
-                <button id="modo-lista-btn" class="modo-btn ativo">Modo Lista</button>
-                <button id="modo-visual-btn" class="modo-btn">Modo Visual</button>
-            </div>
-    
             <div id="editor-lista-container">
+                <!-- MODIFICADO: Container para adicionar item com autocompletar -->
                 <div class="add-item-container">
-                    <input type="text" id="novo-item-lista" placeholder="Adicionar item à lista...">
-                    <input type="text" id="nova-categoria-item" list="categorias-sugeridas" placeholder="Categoria (opcional)...">
-                    <datalist id="categorias-sugeridas"></datalist>
+                    <select id="buscar-produto-select" placeholder="Digite para buscar ou criar um produto..."></select>
                     <button id="adicionar-item-lista-btn">Adicionar</button>
-                </div>
-            </div>
-    
-            <div id="editor-visual-container" style="display: none;">
-                <div class="visual-editor-layout">
-                    <div class="nuvem-container">
-                        <h3>Sua Despensa (Arraste para adicionar)</h3>
-                        <div id="nuvem-itens"></div>
-                    </div>
-                    <div class="caixas-container">
-                        <h3>Categorias da Lista</h3>
-                        <div id="caixas-categorias-container"></div>
-                        <div class="add-categoria-caixa-container">
-                            <input type="text" id="nova-caixa-categoria-nome" placeholder="Nova categoria...">
-                            <button id="criar-caixa-categoria-btn">Criar Caixa</button>
-                        </div>
-                    </div>
                 </div>
             </div>
             
@@ -155,6 +131,8 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <!-- NOVO: Script para a biblioteca de autocompletar -->
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
