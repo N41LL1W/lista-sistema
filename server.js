@@ -36,13 +36,53 @@ const isAuth = (req, res, next) => {
 };
 
 // --- ROTAS DE AUTENTICAÇÃO ---
-app.post('/api/auth/registrar', async (req, res) => { /* ... (código inalterado) ... */ });
-app.post('/api/auth/login', async (req, res) => { /* ... (código inalterado) ... */ });
-app.post('/api/auth/logout', (req, res) => { /* ... (código inalterado) ... */ });
-app.get('/api/auth/status', (req, res) => { /* ... (código inalterado) ... */ });
+app.post('/api/auth/registrar', async (req, res) => {
+    const { email, senha } = req.body;
+    if (!email || !senha || senha.length < 6) return res.status(400).json({ message: 'Email inválido ou senha muito curta (mínimo 6 caracteres).' });
+    try {
+        const senhaHash = await bcrypt.hash(senha, 12);
+        const result = await pool.query('INSERT INTO usuarios (email, senha_hash) VALUES ($1, $2) RETURNING id, email', [email.toLowerCase(), senhaHash]);
+        res.status(201).json({ message: 'Usuário registrado com sucesso!', usuario: result.rows[0] });
+    } catch (err) {
+        if (err.code === '23505') return res.status(409).json({ message: 'Este email já está em uso.' });
+        console.error('Erro ao registrar usuário:', err.stack);
+        res.status(500).json({ message: 'Erro ao registrar usuário.' });
+    }
+});
+app.post('/api/auth/login', async (req, res) => {
+    const { email, senha } = req.body;
+    try {
+        const result = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email.toLowerCase()]);
+        if (result.rowCount === 0) return res.status(401).json({ message: 'Email ou senha inválidos.' });
+        const usuario = result.rows[0];
+        const senhaCorreta = await bcrypt.compare(senha, usuario.senha_hash);
+        if (!senhaCorreta) return res.status(401).json({ message: 'Email ou senha inválidos.' });
+        req.session.isAuth = true;
+        req.session.usuario_id = usuario.id;
+        req.session.usuario_email = usuario.email;
+        res.status(200).json({ message: 'Login bem-sucedido!', usuario: { id: usuario.id, email: usuario.email } });
+    } catch (err) {
+        console.error('Erro ao fazer login:', err.stack);
+        res.status(500).json({ message: 'Erro ao fazer login.' });
+    }
+});
+app.post('/api/auth/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) return res.status(500).json({ message: 'Não foi possível fazer logout.' });
+        res.clearCookie('connect.sid');
+        res.status(200).json({ message: 'Logout bem-sucedido.' });
+    });
+});
+app.get('/api/auth/status', (req, res) => {
+    if (req.session.isAuth) {
+        res.status(200).json({ logado: true, usuario: { id: req.session.usuario_id, email: req.session.usuario_email } });
+    } else {
+        res.status(200).json({ logado: false });
+    }
+});
 
 // --- ROTAS DE PRODUTOS ---
-app.get('/api/produtos/buscar', isAuth, async (req, res) => { // isAuth FOI ADICIONADO AQUI
+app.get('/api/produtos/buscar', isAuth, async (req, res) => {
     const termoBusca = req.query.termo || '';
     try {
         const query = "SELECT id, nome, categoria_sugerida FROM produtos_padronizados WHERE nome ILIKE $1 ORDER BY nome LIMIT 10";
@@ -200,7 +240,7 @@ app.post('/api/listas/:listaId/limpar-comprados', isAuth, async (req, res) => {
     }
 });
 
-// --- ROTAS DE ITENS (REFATORADAS) ---
+// --- ROTAS DE ITENS (REFATORADAS E COMPLETAS) ---
 app.get('/api/listas/:listaId/itens', isAuth, async (req, res) => {
     const { listaId } = req.params;
     const { usuario_id } = req.session;
@@ -245,6 +285,33 @@ app.put('/api/itens/:itemId', isAuth, async (req, res) => {
     try {
         const query = 'UPDATE itens_lista SET valor_unitario = $1, quantidade = $2, comprado = $3 WHERE id = $4 AND lista_id IN (SELECT id FROM listas WHERE usuario_id = $5) RETURNING *';
         const result = await pool.query(query, [valor_unitario, quantidade, comprado, itemId, usuario_id]);
+        if (result.rowCount === 0) return res.status(404).json({ message: 'Item não encontrado ou acesso negado.' });
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error('Erro ao atualizar item:', err.stack);
+        res.status(500).json({ message: 'Erro ao atualizar item.' });
+    }
+});
+// ROTA PATCH QUE ESTAVA FALTANDO
+app.patch('/api/itens/:itemId', isAuth, async (req, res) => {
+    const { itemId } = req.params;
+    const { nome_item, categoria } = req.body;
+    const updates = [];
+    const values = [];
+    let queryIndex = 1;
+    if (nome_item) {
+        updates.push(`nome_item = $${queryIndex++}`);
+        values.push(nome_item);
+    }
+    if (categoria !== undefined) {
+        updates.push(`categoria = $${queryIndex++}`);
+        values.push(categoria === '' ? null : categoria);
+    }
+    if (updates.length === 0) return res.status(400).json({ message: 'Nenhum campo para atualizar.' });
+    values.push(itemId, req.session.usuario_id);
+    try {
+        const query = `UPDATE itens_lista SET ${updates.join(', ')} WHERE id = $${queryIndex} AND lista_id IN (SELECT id FROM listas WHERE usuario_id = $${queryIndex + 1}) RETURNING *`;
+        const result = await pool.query(query, values);
         if (result.rowCount === 0) return res.status(404).json({ message: 'Item não encontrado ou acesso negado.' });
         res.status(200).json(result.rows[0]);
     } catch (err) {
@@ -325,10 +392,12 @@ app.get('/api/share/:token', async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar lista compartilhada.' });
     }
 });
+
+// --- ROTA DE ITENS ÚNICOS (CORRIGIDA) ---
 app.get('/api/itens/unicos', async (req, res) => {
-    // MODIFICADO: Esta rota agora busca da nova tabela de produtos.
     try {
-        const result = await pool.query('SELECT nome FROM produtos_padronizados ORDER BY nome ASC');
+        const query = 'SELECT nome FROM produtos_padronizados ORDER BY nome ASC';
+        const result = await pool.query(query);
         const nomesItens = result.rows.map(row => row.nome);
         res.status(200).json(nomesItens);
     } catch (err) {
