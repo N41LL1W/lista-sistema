@@ -152,6 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
             carregarListas();
         };
         const mostrarEditor = (listaId, nomeLista) => {
+
+            alert("FUNÇÃO INICIALIZADA CHOICES FOI CHAMADA!") // DEBUG
+            
             listaAtivaId = listaId;
             listaTitulo.textContent = `Lista: ${nomeLista}`;
             listaManager.style.display = 'none';
