@@ -427,18 +427,24 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         const adicionarProdutoNaLista = (produtoId) => {
-            if (!produtoId) return;
+            console.log("LOG: adicionarProdutoNaLista chamada com produtoId:", produtoId); // Ponto 1
+            if (!produtoId) {
+                console.warn("LOG: produtoId inválido (null ou undefined). Abortando."); // Ponto 2
+                return;
+            }
             executarAcaoBackend(async () => {
-                const response = await fetch(`/api/listas/${listaAtivaId}/itens`, {
+                console.log("LOG: Dentro de executarAcaoBackend - fetch iniciando..."); // Ponto 3
+
+                await fetch(`/api/listas/${listaAtivaId}/itens`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ produto_id: produtoId })
                 });
-                if (response.status === 409) {
-                    alert('Este item já está na lista.');
-                }
+
+                console.log("LOG: Fetch concluído com sucesso. Carregando novamente os itens."); // Ponto 4
                 await carregarItensDaLista(listaAtivaId);
-                if (choicesInstance) choicesInstance.clearStore();
+                console.log("LOG: carregarItensDaLista concluído."); // Ponto 5
+                if (choicesInstance) choicesInstance.clearStore(); // Limpa o campo de busca
             });
         };
 
