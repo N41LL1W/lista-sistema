@@ -153,8 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const mostrarEditor = (listaId, nomeLista) => {
 
-            alert("FUNÇÃO INICIALIZADA CHOICES FOI CHAMADA!") // DEBUG
-            
             listaAtivaId = listaId;
             listaTitulo.textContent = `Lista: ${nomeLista}`;
             listaManager.style.display = 'none';
@@ -340,10 +338,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const inicializarChoices = () => {
             const buscarProdutoSelect = document.getElementById('buscar-produto-select');
-            if (!buscarProdutoSelect) return;
+            if (!buscarProdutoSelect) {
+                console.error("Elemento 'buscar-produto-select' não encontrado!");
+                return;
+            }
             if (choicesInstance) {
                 choicesInstance.destroy();
             }
+
             choicesInstance = new Choices(buscarProdutoSelect, {
                 searchPlaceholderValue: "Digite para buscar ou criar...",
                 itemSelectText: 'Adicionar',
@@ -353,6 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 noChoicesText: 'Digite 2+ letras para buscar',
             });
 
+            // --- Listener de Busca (Autocompletar) ---
             buscarProdutoSelect.addEventListener('search', async (event) => {
                 try {
                     const termo = event.detail.value;
@@ -361,9 +364,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const response = await fetch(`/api/produtos/buscar?termo=${encodeURIComponent(termo)}`);
                     
                     if (!response.ok) {
-                        // Se o servidor retornar um erro (como 401), não tenta processar
-                        console.error(`Erro ao buscar produtos: ${response.status}`);
-                        return; 
+                        console.error(`Erro ao buscar produtos: Status ${response.status}`);
+                        choicesInstance.clearChoices(); // Limpa as opções se a busca falhar
+                        return;
                     }
 
                     const produtos = await response.json();
@@ -373,50 +376,53 @@ document.addEventListener('DOMContentLoaded', () => {
                         choicesInstance.setChoices(choicesData, 'value', 'label', false);
                     }
                 } catch (error) {
-                    console.error("Falha na busca por autocompletar:", error);
+                    console.error("Falha crítica na busca por autocompletar:", error);
                 }
             });
 
+            // --- Listener de Adicionar Item (Enter ou Clique) ---
             buscarProdutoSelect.addEventListener('addItem', async (event) => {
-                console.log("Evento 'addItem' disparado!", event.detail);
+                console.log("LOG: Evento 'addItem' foi disparado. Detalhes:", event.detail);
 
-                // Verifica se o item já existe (vem com customProperties) ou é novo
-                if (event.detail.customProperties) {
-                    console.log("Item selecionado da lista de sugestões. Não faz nada aqui.");
-                    return;
-                }
-
-                console.log("Item NOVO detectado. Tentando criar...");
-                const nomeNovoProduto = event.detail.value;
-
-                // É importante remover o item temporário que o Choices.js cria na UI
-                choicesInstance.removeActiveItemsByValue(nomeNovoProduto);
-                
-                console.log(`Enviando '${nomeNovoProduto}' para a API /api/produtos/find-or-create`);
-
-                executarAcaoBackend(async () => {
-                    const response = await fetch('/api/produtos/find-or-create', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ nome_produto: nomeNovoProduto })
-                    });
-
-                    console.log("Resposta da API find-or-create:", response.status);
-
-                    if (!response.ok) {
-                        console.error("Falha ao criar o produto padronizado.");
-                        const errorData = await response.json();
-                        console.error("Detalhes do erro:", errorData);
-                        alert(`Não foi possível criar o produto: ${errorData.message}`);
+                try {
+                    // Se o item tem 'customProperties', ele foi selecionado da lista, não criado.
+                    // O botão "Adicionar" vai cuidar dele.
+                    if (event.detail.customProperties) {
+                        console.log("LOG: Item selecionado da lista. O botão 'Adicionar' deve ser usado.");
                         return;
                     }
 
-                    const produtoCriado = await response.json();
-                    console.log("Produto criado/encontrado:", produtoCriado);
+                    // Se não tem, é um item novo criado ao pressionar Enter.
+                    console.log("LOG: Item novo detectado. Criando...");
+                    const nomeNovoProduto = event.detail.value;
+
+                    // Remove o item temporário que o Choices.js cria na interface.
+                    choicesInstance.removeActiveItemsByValue(nomeNovoProduto);
                     
-                    console.log(`Adicionando produto com ID ${produtoCriado.id} à lista.`);
-                    adicionarProdutoNaLista(produtoCriado.id);
-                });
+                    console.log(`LOG: Enviando '${nomeNovoProduto}' para a API...`);
+
+                    executarAcaoBackend(async () => {
+                        const response = await fetch('/api/produtos/find--create', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ nome_produto: nomeNovoProduto })
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || "Falha ao criar o produto.");
+                        }
+
+                        const produtoCriado = await response.json();
+                        console.log("LOG: Produto criado/encontrado:", produtoCriado);
+                        
+                        // Adiciona o produto recém-criado diretamente à lista.
+                        adicionarProdutoNaLista(produtoCriado.id);
+                    });
+                } catch (error) {
+                    console.error("Falha crítica ao adicionar novo item:", error);
+                    alert("Ocorreu um erro ao tentar criar o novo produto.");
+                }
             });
         };
         
