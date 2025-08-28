@@ -7,18 +7,18 @@ Bem-vindo ao Sistema de Listas de Compras Inteligente! Esta é uma aplicação w
 
 ## ✨ Funcionalidades Principais
 
-O sistema foi construído de forma incremental, adicionando funcionalidades ricas para o usuário:
+O sistema foi construído de forma incremental, adicionando funcionalidades ricas e inteligentes:
 
-*   **🔐 Autenticação de Usuários:** Crie sua conta e faça login para gerenciar suas listas de forma privada e segura. As sessões são persistentes, mantendo você logado.
-*   **📝 Gerenciamento Completo (CRUD):** Crie, renomeie (com duplo-clique), abra e delete listas, itens e **modelos** com facilidade.
-*   **📂 Organização por Categorias:** Agrupe itens por categorias (Hortifruti, Laticínios, Limpeza) para otimizar sua rota no supermercado. É possível editar a categoria de um item a qualquer momento.
-*   **🖱️ Modo Visual com Drag-and-Drop:** Adicione itens à sua lista de forma interativa, arrastando-os de uma "despensa" de itens comuns para as caixas de categoria.
-*   **📱 Suporte Mobile:** A interface é totalmente responsiva, e o modo de arrastar e soltar funciona perfeitamente com o toque na tela.
+*   **🔐 Autenticação de Usuários:** Crie sua conta e faça login para gerenciar suas listas de forma privada e segura.
+*   **🧠 Padronização de Produtos com Autocompletar:** Conforme você digita para adicionar um item, o sistema busca em uma base de dados central e sugere produtos, evitando duplicatas e erros de digitação. Se o produto não existe, ele é adicionado à base de dados para futuras sugestões.
+*   **📝 Gerenciamento Completo (CRUD):** Crie, renomeie (com duplo-clique), abra e delete listas, itens e modelos com facilidade.
+*   **📂 Organização por Categorias:** Agrupe itens por categorias (Hortifruti, Laticínios, Limpeza) para otimizar sua rota no supermercado.
 *   **💸 Acompanhamento de Compras:** Durante a compra, insira preços e quantidades, marque itens como "comprados" e veja o total do seu carrinho ser calculado em tempo real.
-*   **📈 Histórico de Preços:** Salve suas compras finalizadas e consulte o histórico de preços de cada produto para saber se está fazendo um bom negócio.
-*   **🔄 Modelos Reutilizáveis (Templates):** Salve listas recorrentes (como "Compras do Mês") como modelos e crie novas listas a partir deles com um único clique.
+*   **📈 Histórico de Preços Pessoal:** Salve suas compras finalizadas e consulte o histórico de preços de cada produto padronizado para saber se está fazendo um bom negócio.
+*   **🔄 Modelos Reutilizáveis (Templates):** Salve listas recorrentes (como "Compras do Mês") como modelos e crie novas listas pré-preenchidas com um único clique.
 *   **🔗 Compartilhamento Simples:** Gere um link de compartilhamento (somente visualização) para qualquer lista e envie para familiares ou amigos.
 *   **🧹 Limpeza Inteligente:** Após a compra, limpe apenas os itens marcados como "comprados" da sua lista, ou resete todos os preços e quantidades para uma nova compra com a mesma lista.
+*   **📱 Interface Responsiva:** O layout se adapta perfeitamente a telas de desktop, tablets e celulares.
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -28,7 +28,7 @@ Este projeto foi construído utilizando uma stack moderna e robusta, focada em p
 *   **HTML5**
 *   **CSS3** (com Grid Layout, Flexbox e Media Queries para responsividade)
 *   **JavaScript (ES6+)** (vanilla, sem frameworks)
-*   **[SortableJS](https://github.com/SortableJS/Sortable):** Biblioteca leve para a funcionalidade de arrastar e soltar com suporte mobile.
+*   **[Choices.js](https://github.com/Choices-js/Choices):** Biblioteca avançada para a criação do campo de busca com autocompletar.
 
 ### **Backend**
 *   **[Node.js](https://nodejs.org/)**
@@ -80,10 +80,10 @@ Para rodar este projeto no seu ambiente de desenvolvimento, siga os passos abaix
 
 ## 🔮 Próximos Passos e Melhorias Futuras
 
-O projeto tem uma base sólida para crescer ainda mais. Algumas ideias para o futuro incluem:
-*   **Padronização de Produtos:** Criar uma base de dados de produtos padronizados para permitir análises de preço entre usuários.
-*   **Análise de Preços da Comunidade:** Mostrar a média de preço de um produto com base nos dados de todos os usuários.
-*   **Colaboração em Tempo Real:** Permitir que múltiplos usuários editem a mesma lista simultaneamente.
+O projeto tem uma base sólida para crescer ainda mais. A próxima grande etapa é a **Análise de Preços da Comunidade**:
+*   Mostrar a média de preço de um produto com base nos dados de todos os usuários.
+*   Exibir o menor e o maior preço já registrado para um item.
+*   Criar um pequeno gráfico de tendência de preço ao longo do tempo.
 
 ---
 _Este projeto foi desenvolvido com o auxílio do Gemini, uma IA do Google._
