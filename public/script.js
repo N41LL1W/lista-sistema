@@ -153,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const mostrarEditor = (listaId, nomeLista) => {
 
+            alert("FUNÇÃO INICIALIZAR CHOICES FOI CHAMADA!"); // <<--- ADICIONE ESTA LINHA
             listaAtivaId = listaId;
             listaTitulo.textContent = `Lista: ${nomeLista}`;
             listaManager.style.display = 'none';
@@ -438,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (choicesInstance) choicesInstance.clearStore(); // Limpa o texto do campo de busca
             });
         };
-        
+
         // --- LISTENERS DA APLICAÇÃO PRINCIPAL ---
         adicionarItemListaBtn.addEventListener('click', () => {
             const itemSelecionado = choicesInstance ? choicesInstance.getValue(true) : null;
