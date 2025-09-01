@@ -82,7 +82,7 @@ app.get('/api/auth/status', (req, res) => {
 });
 
 // --- ROTAS DE PRODUTOS ---
-app.get('/api/produtos/buscar', isAuth, async (req, res) => {
+app.get('/api/produtos/buscar', isAuth, async (req, res) => { // isAuth FOI ADICIONADO AQUI
     const termoBusca = req.query.termo || '';
     try {
         const query = "SELECT id, nome, categoria_sugerida FROM produtos_padronizados WHERE nome ILIKE $1 ORDER BY nome LIMIT 10";
