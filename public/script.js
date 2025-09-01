@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const inicializarChoices = () => {
             const buscarProdutoSelect = document.getElementById('buscar-produto-select');
             if (!buscarProdutoSelect) {
-                console.error("Elemento 'buscar-produto-select' não encontrado!");
+                console.error("DEBUG: Elemento 'buscar-produto-select' não encontrado!");
                 return;
             }
             if (choicesInstance) {
@@ -355,99 +355,90 @@ document.addEventListener('DOMContentLoaded', () => {
                 noChoicesText: 'Digite 2+ letras para buscar',
             });
 
-            // --- Listener de Busca (Autocompletar) ---
             buscarProdutoSelect.addEventListener('search', async (event) => {
                 try {
                     const termo = event.detail.value;
                     if (termo.length < 2) return;
-
                     const response = await fetch(`/api/produtos/buscar?termo=${encodeURIComponent(termo)}`);
-                    
                     if (!response.ok) {
-                        console.error(`Erro ao buscar produtos: Status ${response.status}`);
-                        choicesInstance.clearChoices(); // Limpa as opções se a busca falhar
-                        return;
+                        console.error(`DEBUG: Erro ao buscar produtos: Status ${response.status}`);
+                        return; 
                     }
-
                     const produtos = await response.json();
-                    
                     if (Array.isArray(produtos)) {
                         const choicesData = produtos.map(p => ({ value: p.id, label: p.nome, customProperties: p }));
                         choicesInstance.setChoices(choicesData, 'value', 'label', false);
                     }
                 } catch (error) {
-                    console.error("Falha crítica na busca por autocompletar:", error);
+                    console.error("DEBUG: Falha na busca por autocompletar:", error);
                 }
             });
 
-            // --- Listener de Adicionar Item (Enter ou Clique) ---
             buscarProdutoSelect.addEventListener('addItem', async (event) => {
-                console.log("LOG: Evento 'addItem' foi disparado. Detalhes:", event.detail);
+                console.log("DEBUG 1: Evento 'addItem' disparado. Detalhes:", event.detail);
 
                 try {
-                    // Se o item tem 'customProperties', ele foi selecionado da lista, não criado.
-                    // O botão "Adicionar" vai cuidar dele.
                     if (event.detail.customProperties) {
-                        console.log("LOG: Item selecionado da lista. O botão 'Adicionar' deve ser usado.");
+                        console.log("DEBUG 2a: Item selecionado da lista. Botão 'Adicionar' deve ser usado.");
                         return;
                     }
 
-                    // Se não tem, é um item novo criado ao pressionar Enter.
-                    console.log("LOG: Item novo detectado. Criando...");
+                    console.log("DEBUG 2b: Item NOVO detectado. Criando...");
                     const nomeNovoProduto = event.detail.value;
-
-                    // Remove o item temporário que o Choices.js cria na interface.
                     choicesInstance.removeActiveItemsByValue(nomeNovoProduto);
                     
-                    console.log(`LOG: Enviando '${nomeNovoProduto}' para a API...`);
-
+                    console.log(`DEBUG 3: Enviando '${nomeNovoProduto}' para a API...`);
+                    
                     executarAcaoBackend(async () => {
-                        const response = await fetch('/api/produtos/find--create', {
+                        const response = await fetch('/api/produtos/find-or-create', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ nome_produto: nomeNovoProduto })
                         });
 
+                        console.log("DEBUG 4: Resposta da API find-or-create:", response.status);
                         if (!response.ok) {
                             const errorData = await response.json();
                             throw new Error(errorData.message || "Falha ao criar o produto.");
                         }
 
                         const produtoCriado = await response.json();
-                        console.log("LOG: Produto criado/encontrado:", produtoCriado);
+                        console.log("DEBUG 5: Produto criado/encontrado:", produtoCriado);
                         
-                        // Adiciona o produto recém-criado diretamente à lista.
                         adicionarProdutoNaLista(produtoCriado.id);
                     });
                 } catch (error) {
-                    console.error("Falha crítica ao adicionar novo item:", error);
+                    console.error("DEBUG: Falha crítica ao adicionar novo item:", error);
                     alert("Ocorreu um erro ao tentar criar o novo produto.");
                 }
             });
         };
         
         const adicionarProdutoNaLista = (produtoId) => {
-            console.log("LOG: adicionarProdutoNaLista chamada com produtoId:", produtoId); // Ponto 1
+            console.log("DEBUG 6: Função adicionarProdutoNaLista chamada com ID:", produtoId);
             if (!produtoId) {
-                console.warn("LOG: produtoId inválido (null ou undefined). Abortando."); // Ponto 2
+                console.warn("DEBUG 7: ID do produto inválido. Abortando.");
                 return;
             }
             executarAcaoBackend(async () => {
-                console.log("LOG: Dentro de executarAcaoBackend - fetch iniciando..."); // Ponto 3
-
-                await fetch(`/api/listas/${listaAtivaId}/itens`, {
+                console.log(`DEBUG 8: Enviando requisição para adicionar produto ${produtoId} à lista ${listaAtivaId}`);
+                const response = await fetch(`/api/listas/${listaAtivaId}/itens`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ produto_id: produtoId })
                 });
 
-                console.log("LOG: Fetch concluído com sucesso. Carregando novamente os itens."); // Ponto 4
+                console.log("DEBUG 9: Resposta da API de adicionar item:", response.status);
+                if(response.status === 409) {
+                    alert('Este item já está na lista.');
+                }
+                
+                console.log("DEBUG 10: Recarregando itens da lista...");
                 await carregarItensDaLista(listaAtivaId);
-                console.log("LOG: carregarItensDaLista concluído."); // Ponto 5
-                if (choicesInstance) choicesInstance.clearStore(); // Limpa o campo de busca
+                if (choicesInstance) choicesInstance.clearStore(); // Limpa o texto do campo de busca
             });
         };
-
+        
         // --- LISTENERS DA APLICAÇÃO PRINCIPAL ---
         adicionarItemListaBtn.addEventListener('click', () => {
             const itemSelecionado = choicesInstance ? choicesInstance.getValue(true) : null;
