@@ -380,42 +380,44 @@ document.addEventListener('DOMContentLoaded', () => {
             const inputDoChoices = choicesInstance.input.element; // Acessa o input real criado pela biblioteca
 
             inputDoChoices.addEventListener('keydown', (event) => {
-                // Verifica se a tecla pressionada foi 'Enter'
                 if (event.key === 'Enter') {
-                    console.log("DEBUG: Tecla Enter pressionada no campo de busca.");
+                    console.log("DEBUG 1: Enter pressionado.");
 
-                    // Pega o texto que o usuário digitou
                     const nomeNovoProduto = inputDoChoices.value.trim();
+                    console.log("DEBUG 2: Texto digitado:", nomeNovoProduto);
 
-                    // Verifica se o usuário realmente digitou algo e se o item não está na lista de sugestões
-                    if (nomeNovoProduto && choicesInstance.getValue() === null) {
-                        console.log(`DEBUG: Novo item detectado via Enter: '${nomeNovoProduto}'`);
+                    const itemSelecionado = choicesInstance.getValue();
+                    console.log("DEBUG 3: Valor de choicesInstance.getValue():", itemSelecionado);
+
+                    // A condição `itemSelecionado === null` é a mais confiável aqui
+                    if (nomeNovoProduto && itemSelecionado === null) {
+                        console.log("DEBUG 4: CONDIÇÃO VERDADEIRA. Criando novo item...");
                         
-                        // Impede o comportamento padrão do Enter (que poderia ser submeter um formulário)
                         event.preventDefault(); 
-                        
-                        // Limpa o campo de busca imediatamente
                         choicesInstance.clearInput();
                         
-                        // Chama a nossa lógica para criar o produto e adicioná-lo
                         executarAcaoBackend(async () => {
-                            console.log(`DEBUG: Enviando '${nomeNovoProduto}' para a API...`);
+                            console.log(`DEBUG 5: Enviando '${nomeNovoProduto}' para a API...`);
                             const response = await fetch('/api/produtos/find-or-create', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ nome_produto: nomeNovoProduto })
                             });
-
                             if (!response.ok) {
                                 const errorData = await response.json();
                                 throw new Error(errorData.message || "Falha ao criar o produto.");
                             }
-
                             const produtoCriado = await response.json();
-                            console.log("DEBUG: Produto criado/encontrado:", produtoCriado);
-                            
+                            console.log("DEBUG 6: Produto criado:", produtoCriado);
                             adicionarProdutoNaLista(produtoCriado.id);
                         });
+                    } else {
+                        console.log("DEBUG 4: CONDIÇÃO FALSA. O item já está selecionado ou o texto está vazio.");
+                        // Se um item já estava selecionado, o botão "Adicionar" deve lidar com ele.
+                        // Podemos forçar o clique do botão para melhorar a experiência.
+                        if (itemSelecionado) {
+                            adicionarItemListaBtn.click();
+                        }
                     }
                 }
             });
