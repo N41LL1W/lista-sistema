@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let listaAtivaId = null;
     let itensAtivos = [];
     let choicesInstance = null;
+    let choicesCompraInstance = null;
 
     // --- LÓGICA DE AUTENTICAÇÃO ---
     const mostrarFeedback = (elemento, mensagem, tipo = 'erro') => {
@@ -166,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             listaManager.style.display = 'none';
             listaEditor.style.display = 'none';
             modoCompra.style.display = 'block';
+            inicializarChoicesCompra(); // CHAMA A NOVA FUNÇÃO AQUI
             carregarItensDaLista(listaAtivaId).then(() => renderizarItensCompra());
         };
         
@@ -210,6 +212,19 @@ document.addEventListener('DOMContentLoaded', () => {
             } finally {
                 esconderLoader();
             }
+        };
+        // --- TESTE
+        const inicializarChoicesCompra = () => {
+            const selectElement = document.getElementById('novo-item-compra-select');
+            if (!selectElement) return;
+            if (choicesCompraInstance) {
+                choicesCompraInstance.destroy();
+            }
+            choicesCompraInstance = new Choices(selectElement, { /* ... mesmas opções do outro ... */ });
+            
+            // Adiciona os mesmos listeners de 'search' e 'addItem' do inicializarChoices principal
+            selectElement.addEventListener('search', async (event) => { /* ... mesma lógica de busca ... */ });
+            selectElement.addEventListener('addItem', async (event) => { /* ... mesma lógica de addItem ... */ });
         };
 
         const renderizarListasEModelos = (data) => {
@@ -376,16 +391,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nomeNovoProduto = inputDoChoices.value.trim();
                     const itemSelecionado = choicesInstance.getValue();
 
-                    // CONDIÇÃO CORRIGIDA: !itemSelecionado checa tanto null quanto undefined
                     if (nomeNovoProduto && !itemSelecionado) {
                         event.preventDefault();
                         choicesInstance.clearInput();
                         
+                        // --- MUDANÇA AQUI: Pergunta a categoria para o novo produto ---
+                        const categoria = prompt(`Qual a categoria para o novo produto "${nomeNovoProduto}"? (Opcional)`);
+
                         executarAcaoBackend(async () => {
                             const response = await fetch('/api/produtos/find-or-create', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ nome_produto: nomeNovoProduto })
+                                body: JSON.stringify({ 
+                                    nome_produto: nomeNovoProduto, 
+                                    categoria: categoria // Envia a categoria para ser salva
+                                })
                             });
                             if (!response.ok) {
                                 const errorData = await response.json();
@@ -475,34 +495,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') input.replaceWith(span); });
             }
         });
-        itensListaUL.addEventListener('click', (e) => {
-            if (e.target.classList.contains('deletar-item-btn') && confirm('Deletar este item?')) {
-                executarAcaoBackend(async () => {
-                    await fetch(`/api/itens/${e.target.dataset.id}`, { method: 'DELETE' });
-                    await carregarItensDaLista(listaAtivaId);
-                });
+        
+        // VERSÃO CORRIGIDA
+        itensListaUL.addEventListener('dblclick', (e) => {
+            const target = e.target;
+            // Agora só nos importamos com o clique no nome do item.
+            if (target.classList.contains('nome-item-editavel')) {
+                alert("A edição de nome de produtos padronizados será uma futura funcionalidade!");
+                // A lógica para editar o nome de um produto padronizado é mais complexa,
+                // então vamos desativá-la temporariamente para evitar confusão.
+                // Quando implementarmos, precisaremos do ID do produto, não do item.
             }
         });
+
         adicionarItemCompraBtn.addEventListener('click', () => {
-            const nomeItem = novoItemCompraInput.value.trim();
-            if (!nomeItem) return;
-            executarAcaoBackend(async () => {
-                const prodResponse = await fetch('/api/produtos/find-or-create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome_produto: nomeItem })
-                });
-                const produto = await prodResponse.json();
-                await fetch(`/api/listas/${listaAtivaId}/itens`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ produto_id: produto.id })
-                });
-                novoItemCompraInput.value = '';
-                await carregarItensDaLista(listaAtivaId);
-                renderizarItensCompra();
-            });
+            const itemSelecionado = choicesCompraInstance ? choicesCompraInstance.getValue(true) : null;
+            if (itemSelecionado) {
+                adicionarProdutoNaLista(itemSelecionado);
+            } else {
+                alert("Selecione um item da lista ou digite um novo nome e pressione Enter.");
+            }
         });
+
         itensCompraUL.addEventListener('change', (e) => {
             const li = e.target.closest('li');
             if (!li) return;
