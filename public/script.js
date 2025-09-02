@@ -338,10 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const inicializarChoices = () => {
             const buscarProdutoSelect = document.getElementById('buscar-produto-select');
-            if (!buscarProdutoSelect) {
-                console.error("DEBUG: Elemento 'buscar-produto-select' não encontrado!");
-                return;
-            }
+            if (!buscarProdutoSelect) return;
             if (choicesInstance) {
                 choicesInstance.destroy();
             }
@@ -355,49 +352,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 noChoicesText: 'Digite 2+ letras para buscar',
             });
 
-            // Listener de Busca (Autocompletar) - SEM MUDANÇAS
+            // Listener de Busca (Autocompletar)
             buscarProdutoSelect.addEventListener('search', async (event) => {
                 try {
                     const termo = event.detail.value;
                     if (termo.length < 2) return;
                     const response = await fetch(`/api/produtos/buscar?termo=${encodeURIComponent(termo)}`);
-                    if (!response.ok) {
-                        console.error(`DEBUG: Erro ao buscar produtos: Status ${response.status}`);
-                        return;
-                    }
+                    if (!response.ok) return;
                     const produtos = await response.json();
                     if (Array.isArray(produtos)) {
                         const choicesData = produtos.map(p => ({ value: p.id, label: p.nome, customProperties: p }));
                         choicesInstance.setChoices(choicesData, 'value', 'label', false);
                     }
                 } catch (error) {
-                    console.error("DEBUG: Falha na busca por autocompletar:", error);
+                    console.error("Falha na busca por autocompletar:", error);
                 }
             });
 
-            // --- NOVA ABORDAGEM PARA CRIAR ITENS ---
-            // Em vez de 'addItem', vamos ouvir o evento de pressionar tecla no campo de input.
-            const inputDoChoices = choicesInstance.input.element; // Acessa o input real criado pela biblioteca
-
+            // Listener para o campo de input do Choices.js
+            const inputDoChoices = choicesInstance.input.element;
             inputDoChoices.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
-                    console.log("DEBUG 1: Enter pressionado.");
-
                     const nomeNovoProduto = inputDoChoices.value.trim();
-                    console.log("DEBUG 2: Texto digitado:", nomeNovoProduto);
-
                     const itemSelecionado = choicesInstance.getValue();
-                    console.log("DEBUG 3: Valor de choicesInstance.getValue():", itemSelecionado);
 
-                    // A condição `itemSelecionado === null` é a mais confiável aqui
-                    if (nomeNovoProduto && itemSelecionado === null) {
-                        console.log("DEBUG 4: CONDIÇÃO VERDADEIRA. Criando novo item...");
-                        
-                        event.preventDefault(); 
+                    // CONDIÇÃO CORRIGIDA: !itemSelecionado checa tanto null quanto undefined
+                    if (nomeNovoProduto && !itemSelecionado) {
+                        event.preventDefault();
                         choicesInstance.clearInput();
                         
                         executarAcaoBackend(async () => {
-                            console.log(`DEBUG 5: Enviando '${nomeNovoProduto}' para a API...`);
                             const response = await fetch('/api/produtos/find-or-create', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -408,16 +392,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 throw new Error(errorData.message || "Falha ao criar o produto.");
                             }
                             const produtoCriado = await response.json();
-                            console.log("DEBUG 6: Produto criado:", produtoCriado);
                             adicionarProdutoNaLista(produtoCriado.id);
                         });
-                    } else {
-                        console.log("DEBUG 4: CONDIÇÃO FALSA. O item já está selecionado ou o texto está vazio.");
-                        // Se um item já estava selecionado, o botão "Adicionar" deve lidar com ele.
-                        // Podemos forçar o clique do botão para melhorar a experiência.
-                        if (itemSelecionado) {
-                            adicionarItemListaBtn.click();
-                        }
                     }
                 }
             });
