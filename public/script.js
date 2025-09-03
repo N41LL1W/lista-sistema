@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const voltarBtn = document.getElementById('voltar-btn');
     const iniciarCompraBtn = document.getElementById('iniciar-compra-btn');
     const compraTitulo = document.getElementById('compra-titulo');
-    const novoItemCompraInput = document.getElementById('novo-item-compra');
     const adicionarItemCompraBtn = document.getElementById('adicionar-item-compra-btn');
     const itensCompraUL = document.getElementById('itens-compra');
     const voltarCompraBtn = document.getElementById('voltar-compra-btn');
@@ -50,30 +49,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ESTADO DA APLICAÇÃO ---
     let listaAtivaId = null;
     let itensAtivos = [];
-    let choicesInstance = null;
-    let choicesCompraInstance = null;
-
+    let choicesProdutos = null;
+    let choicesCompra = null;
+    
     // --- LÓGICA DE AUTENTICAÇÃO ---
     const mostrarFeedback = (elemento, mensagem, tipo = 'erro') => {
         if (elemento) {
             elemento.textContent = mensagem;
             elemento.className = `feedback-msg ${tipo}`;
-            setTimeout(() => {
-                if(elemento) {
-                    elemento.textContent = '';
-                    elemento.className = 'feedback-msg';
-                }
-            }, 3000);
+            setTimeout(() => { if(elemento) { elemento.textContent = ''; elemento.className = 'feedback-msg'; } }, 3000);
         }
     };
     const alternarAuthView = (view) => {
-        if (view === 'registro') {
-            loginView.style.display = 'none';
-            registroView.style.display = 'block';
-        } else {
-            loginView.style.display = 'block';
-            registroView.style.display = 'none';
-        }
+        if (view === 'registro') { loginView.style.display = 'none'; registroView.style.display = 'block'; } 
+        else { loginView.style.display = 'block'; registroView.style.display = 'none'; }
     };
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -87,9 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ email, senha })
             });
             const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message);
-            }
+            if (!response.ok) throw new Error(data.message);
             authContainer.style.display = 'none';
             appContainer.style.display = 'block';
             usuarioLogadoSpan.textContent = data.usuario.email;
@@ -109,9 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ email, senha })
             });
             const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message);
-            }
+            if (!response.ok) throw new Error(data.message);
             mostrarFeedback(loginFeedback, 'Registro bem-sucedido! Faça o login.', 'sucesso');
             alternarAuthView('login');
             registroForm.reset();
@@ -146,42 +131,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const iniciarAppPrincipal = () => {
         const mostrarLoader = () => loader.style.display = 'flex';
         const esconderLoader = () => loader.style.display = 'none';
+        
         const mostrarManager = () => {
             listaManager.style.display = 'block';
             listaEditor.style.display = 'none';
             modoCompra.style.display = 'none';
             carregarListas();
         };
-        const mostrarEditor = (listaId, nomeLista) => {
 
+        const mostrarEditor = (listaId, nomeLista) => {
             listaAtivaId = listaId;
             listaTitulo.textContent = `Lista: ${nomeLista}`;
             listaManager.style.display = 'none';
             listaEditor.style.display = 'block';
             modoCompra.style.display = 'none';
-            inicializarChoices();
+            inicializarChoices(document.getElementById('buscar-produto-select'), (instance) => choicesProdutos = instance);
             carregarItensDaLista(listaId);
         };
+
         const mostrarCompra = (nomeLista) => {
             compraTitulo.textContent = `Em Compra: ${nomeLista}`;
             listaManager.style.display = 'none';
             listaEditor.style.display = 'none';
             modoCompra.style.display = 'block';
-            inicializarChoicesCompra(); // CHAMA A NOVA FUNÇÃO AQUI
-            carregarItensDaLista(listaAtivaId).then(() => renderizarItensCompra());
+            inicializarChoices(document.getElementById('novo-item-compra-select'), (instance) => choicesCompra = instance);
+            carregarItensDaLista(listaId).then(() => renderizarItensCompra());
         };
-        
+
         const executarAcaoBackend = async (acao) => {
             mostrarLoader();
-            try {
-                await acao();
-            } catch (error) {
-                console.error("Erro na ação de backend:", error);
-                alert("Ocorreu um erro. Tente novamente.");
-            } finally {
-                esconderLoader();
-            }
+            try { await acao(); } 
+            catch (error) { console.error("Erro na ação de backend:", error); alert("Ocorreu um erro. Tente novamente."); } 
+            finally { esconderLoader(); }
         };
+
         const carregarListas = async () => {
             mostrarLoader();
             try {
@@ -190,12 +173,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!response.ok) throw new Error(`Erro do servidor: ${response.status}`);
                 const data = await response.json();
                 renderizarListasEModelos(data);
-            } catch (error) {
-                console.error("Erro ao carregar listas:", error);
-            } finally {
-                esconderLoader();
-            }
+            } catch (error) { console.error("Erro ao carregar listas:", error); } 
+            finally { esconderLoader(); }
         };
+
         const carregarItensDaLista = async (listaId) => {
             mostrarLoader();
             try {
@@ -213,20 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 esconderLoader();
             }
         };
-        // --- TESTE
-        const inicializarChoicesCompra = () => {
-            const selectElement = document.getElementById('novo-item-compra-select');
-            if (!selectElement) return;
-            if (choicesCompraInstance) {
-                choicesCompraInstance.destroy();
-            }
-            choicesCompraInstance = new Choices(selectElement, { /* ... mesmas opções do outro ... */ });
-            
-            // Adiciona os mesmos listeners de 'search' e 'addItem' do inicializarChoices principal
-            selectElement.addEventListener('search', async (event) => { /* ... mesma lógica de busca ... */ });
-            selectElement.addEventListener('addItem', async (event) => { /* ... mesma lógica de addItem ... */ });
-        };
 
+// --- Funções de Renderização ---
         const renderizarListasEModelos = (data) => {
             listasSalvasUL.innerHTML = '';
             if (data.listas.length === 0) {
@@ -255,76 +224,109 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         };
+
         const renderizarItensLista = () => {
             itensListaUL.innerHTML = '';
             iniciarCompraBtn.disabled = itensAtivos.length === 0;
             if (itensAtivos.length === 0) {
-                itensListaUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Adicione itens à sua lista.</li>';
+                itensListaUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Adicione produtos à sua lista.</li>';
                 return;
             }
-            let categoriaAtual = "---";
-            itensAtivos.forEach(item => {
-                if (item.categoria !== categoriaAtual) {
-                    categoriaAtual = item.categoria;
-                    const categoriaHeader = document.createElement('li');
-                    categoriaHeader.className = 'categoria-header';
-                    categoriaHeader.textContent = categoriaAtual || 'Sem Categoria';
-                    itensListaUL.appendChild(categoriaHeader);
-                }
-                const li = document.createElement('li');
-                li.className = 'item-editavel';
-                li.dataset.itemId = item.id;
-                li.innerHTML = `<span class="nome-item-editavel">${item.nome_item}</span><button class="deletar-item-btn" data-id="${item.id}">Deletar</button>`;
-                itensListaUL.appendChild(li);
+            const itensAgrupados = agruparItensPorCategoria(itensAtivos);
+            const categoriasOrdenadas = Object.keys(itensAgrupados).sort((a, b) => {
+                if (a === 'Sem Categoria') return -1;
+                if (b === 'Sem Categoria') return 1;
+                return a.localeCompare(b);
+            });
+            categoriasOrdenadas.forEach(categoria => {
+                const categoriaHeader = document.createElement('li');
+                categoriaHeader.className = 'categoria-header';
+                categoriaHeader.textContent = categoria;
+                itensListaUL.appendChild(categoriaHeader);
+                itensAgrupados[categoria].forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'item-editavel';
+                    li.dataset.itemId = item.id; // ID do item na lista
+                    li.innerHTML = `
+                        <div class="info-item-editavel">
+                            <span class="nome-item-editavel">${item.nome_item}</span>
+                            <span class="categoria-item-editavel" data-produto-id="${item.produto_id}">
+                                ${item.categoria || 'Definir Categoria'}
+                            </span>
+                        </div>
+                        <button class="deletar-item-btn" data-id="${item.id}">Deletar</button>`;
+                    itensListaUL.appendChild(li);
+                });
             });
         };
+
         const renderizarItensCompra = () => {
             itensAtivos.sort((a, b) => a.comprado - b.comprado);
             itensCompraUL.innerHTML = '';
             if (itensAtivos.length === 0) {
                 itensCompraUL.innerHTML = '<li style="color: #6c757d; font-style: italic;">Sua lista de compras está vazia.</li>';
             } else {
-                let categoriaAtual = "---";
-                let cabecalhoCompradosAdicionado = false;
-                itensAtivos.forEach(item => {
-                    if (item.comprado && !cabecalhoCompradosAdicionado) {
-                        const compradoHeader = document.createElement('li');
-                        compradoHeader.className = 'categoria-header comprado-header';
-                        compradoHeader.textContent = 'Itens no Carrinho';
-                        itensCompraUL.appendChild(compradoHeader);
-                        cabecalhoCompradosAdicionado = true;
-                    } else if (!item.comprado && item.categoria !== categoriaAtual) {
-                        categoriaAtual = item.categoria;
-                        const categoriaHeader = document.createElement('li');
-                        categoriaHeader.className = 'categoria-header';
-                        categoriaHeader.textContent = categoriaAtual || 'Sem Categoria';
-                        itensCompraUL.appendChild(categoriaHeader);
-                    }
-                    const subtotal = (item.valor_unitario || 0) * (item.quantidade || 1);
-                    const li = document.createElement('li');
-                    li.className = `lista-item ${item.comprado ? 'comprado' : ''}`;
-                    li.dataset.id = item.id;
-                    li.dataset.produtoId = item.produto_id;
-                    li.innerHTML = `
-                        <div class="item-info"><input type="checkbox" class="item-checkbox" ${item.comprado ? 'checked' : ''}><span class="item-nome">${item.nome_item}</span></div>
-                        <div class="item-detalhes">
-                            <div class="item-inputs"><input type="number" class="valor-input" placeholder="R$" step="0.01" value="${item.valor_unitario || ''}"><span>x</span><input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || 1}"></div>
-                            <div class="item-total">
-                                <span>R$ ${subtotal.toFixed(2)}</span>
-                                <span class="historico-btn" title="Ver histórico de preços">📈</span>
-                            </div>
-                        </div>`;
-                    itensCompraUL.appendChild(li);
+                const itensAgrupados = agruparItensPorCategoria(itensAtivos.filter(i => !i.comprado));
+                const categoriasOrdenadas = Object.keys(itensAgrupados).sort((a, b) => {
+                    if (a === 'Sem Categoria') return -1;
+                    if (b === 'Sem Categoria') return 1;
+                    return a.localeCompare(b);
                 });
+
+                categoriasOrdenadas.forEach(categoria => {
+                    const categoriaHeader = document.createElement('li');
+                    categoriaHeader.className = 'categoria-header';
+                    categoriaHeader.textContent = categoria;
+                    itensCompraUL.appendChild(categoriaHeader);
+                    itensAgrupados[categoria].forEach(item => renderizarItemCompra(item));
+                });
+
+                const itensComprados = itensAtivos.filter(i => i.comprado);
+                if (itensComprados.length > 0) {
+                    const compradoHeader = document.createElement('li');
+                    compradoHeader.className = 'categoria-header comprado-header';
+                    compradoHeader.textContent = 'Itens no Carrinho';
+                    itensCompraUL.appendChild(compradoHeader);
+                    itensComprados.forEach(item => renderizarItemCompra(item));
+                }
             }
             renderizarTotais();
         };
+        
+        const renderizarItemCompra = (item) => {
+            const subtotal = (item.valor_unitario || 0) * (item.quantidade || 1);
+            const li = document.createElement('li');
+            li.className = `lista-item ${item.comprado ? 'comprado' : ''}`;
+            li.dataset.id = item.id;
+            li.dataset.produtoId = item.produto_id;
+            li.innerHTML = `
+                <div class="item-info"><input type="checkbox" class="item-checkbox" ${item.comprado ? 'checked' : ''}><span class="item-nome">${item.nome_item}</span></div>
+                <div class="item-detalhes">
+                    <div class="item-inputs"><input type="number" class="valor-input" placeholder="R$" step="0.01" value="${item.valor_unitario || ''}"><span>x</span><input type="number" class="quantidade-input" placeholder="Qtd" value="${item.quantidade || 1}"></div>
+                    <div class="item-total">
+                        <span>R$ ${subtotal.toFixed(2)}</span>
+                        <span class="historico-btn" title="Ver histórico de preços">📈</span>
+                    </div>
+                </div>`;
+            itensCompraUL.appendChild(li);
+        };
+        
         const renderizarTotais = () => {
             const totalLista = itensAtivos.reduce((acc, item) => acc + (item.valor_unitario || 0) * (item.quantidade || 1), 0);
             const totalCarrinho = itensAtivos.reduce((acc, item) => item.comprado ? acc + (item.valor_unitario || 0) * (item.quantidade || 1) : acc, 0);
             document.getElementById('total-lista').textContent = totalLista.toFixed(2);
             document.getElementById('total-carrinho').textContent = totalCarrinho.toFixed(2);
         };
+
+        const agruparItensPorCategoria = (itens) => {
+            return itens.reduce((acc, item) => {
+                const categoria = item.categoria || 'Sem Categoria';
+                if (!acc[categoria]) acc[categoria] = [];
+                acc[categoria].push(item);
+                return acc;
+            }, {});
+        };
+
         const fecharHistorico = () => { modalHistorico.style.display = 'none'; };
         const mostrarHistoricoPrecos = async (produtoId, nomeItem) => {
             historicoTituloItem.textContent = `Histórico de: ${nomeItem}`;
@@ -351,14 +353,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        const inicializarChoices = () => {
-            const buscarProdutoSelect = document.getElementById('buscar-produto-select');
-            if (!buscarProdutoSelect) return;
-            if (choicesInstance) {
-                choicesInstance.destroy();
-            }
+        // --- LÓGICA DE AUTOCOMPLETAR (CHOICES.JS) ---
+        const inicializarChoices = (selectElement, setInstanceCallback, onSelectCallback) => {
+            if (!selectElement) return;
+            let currentInstance = selectElement.choices;
+            if (currentInstance) currentInstance.destroy();
 
-            choicesInstance = new Choices(buscarProdutoSelect, {
+            const newChoices = new Choices(selectElement, {
                 searchPlaceholderValue: "Digite para buscar ou criar...",
                 itemSelectText: 'Adicionar',
                 removeItemButton: true,
@@ -366,57 +367,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 noResultsText: 'Nenhum resultado, pressione Enter para criar',
                 noChoicesText: 'Digite 2+ letras para buscar',
             });
-
-            // Listener de Busca (Autocompletar)
-            buscarProdutoSelect.addEventListener('search', async (event) => {
-                try {
-                    const termo = event.detail.value;
-                    if (termo.length < 2) return;
-                    const response = await fetch(`/api/produtos/buscar?termo=${encodeURIComponent(termo)}`);
-                    if (!response.ok) return;
-                    const produtos = await response.json();
-                    if (Array.isArray(produtos)) {
-                        const choicesData = produtos.map(p => ({ value: p.id, label: p.nome, customProperties: p }));
-                        choicesInstance.setChoices(choicesData, 'value', 'label', false);
-                    }
-                } catch (error) {
-                    console.error("Falha na busca por autocompletar:", error);
+            
+            selectElement.addEventListener('search', async (event) => {
+                const termo = event.detail.value;
+                if (termo.length < 2) return;
+                const url = selectElement.id.includes('categoria') ? `/api/categorias/buscar?termo=${encodeURIComponent(termo)}` : `/api/produtos/buscar?termo=${encodeURIComponent(termo)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    const choicesData = data.map(d => ({ value: d.id, label: d.nome }));
+                    newChoices.setChoices(choicesData, 'value', 'label', false);
                 }
             });
 
-            // Listener para o campo de input do Choices.js
-            const inputDoChoices = choicesInstance.input.element;
-            inputDoChoices.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    const nomeNovoProduto = inputDoChoices.value.trim();
-                    const itemSelecionado = choicesInstance.getValue();
-
-                    if (nomeNovoProduto && !itemSelecionado) {
-                        event.preventDefault();
-                        choicesInstance.clearInput();
-                        
-                        // --- MUDANÇA AQUI: Pergunta a categoria para o novo produto ---
-                        const categoria = prompt(`Qual a categoria para o novo produto "${nomeNovoProduto}"? (Opcional)`);
-
-                        executarAcaoBackend(async () => {
-                            const response = await fetch('/api/produtos/find-or-create', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    nome_produto: nomeNovoProduto, 
-                                    categoria: categoria // Envia a categoria para ser salva
-                                })
-                            });
-                            if (!response.ok) {
-                                const errorData = await response.json();
-                                throw new Error(errorData.message || "Falha ao criar o produto.");
-                            }
-                            const produtoCriado = await response.json();
-                            adicionarProdutoNaLista(produtoCriado.id);
-                        });
-                    }
+            selectElement.addEventListener('addItem', async (event) => {
+                if (!isNaN(event.detail.value)) return;
+                const nomeNovo = event.detail.value;
+                newChoices.removeActiveItemsByValue(nomeNovo);
+                onSelectCallback(nomeNovo, true);
+            });
+            
+            selectElement.addEventListener('change', (event) => {
+                if(event.detail.value && !isNaN(event.detail.value)){
+                    onSelectCallback(event.detail.value, false);
                 }
             });
+
+            setInstanceCallback(newChoices);
+            newChoices.showDropdown();
         };
         
         const adicionarProdutoNaLista = (produtoId) => {
@@ -442,6 +420,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 await carregarItensDaLista(listaAtivaId);
                 if (choicesInstance) choicesInstance.clearStore(); // Limpa o texto do campo de busca
             });
+        };
+
+        const handleEditarCategoria = (spanElemento) => {
+            const produtoId = spanElemento.dataset.produtoId;
+            const selectContainer = document.createElement('div');
+            selectContainer.className = 'select-container-editavel';
+            const select = document.createElement('select');
+            spanElemento.replaceWith(selectContainer);
+            selectContainer.appendChild(select);
+
+            const onCategoriaSelect = (categoriaValue, isNew) => {
+                executarAcaoBackend(async () => {
+                    let categoriaId = categoriaValue;
+                    if(isNew) {
+                        const categoria = await criarOuEncontrarCategoria(categoriaValue);
+                        categoriaId = categoria.id;
+                    }
+                    await associarProdutoACategoria(produtoId, categoriaId);
+                });
+            };
+
+            inicializarChoices(select, (instance) => {}, onCategoriaSelect);
         };
 
         // --- LISTENERS DA APLICAÇÃO PRINCIPAL ---

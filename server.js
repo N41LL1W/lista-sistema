@@ -81,11 +81,48 @@ app.get('/api/auth/status', (req, res) => {
     }
 });
 
-// --- ROTAS DE PRODUTOS ---
-app.get('/api/produtos/buscar', isAuth, async (req, res) => { // isAuth FOI ADICIONADO AQUI
+// --- ROTAS DE CATEGORIAS ---
+app.get('/api/categorias/buscar', isAuth, async (req, res) => {
     const termoBusca = req.query.termo || '';
     try {
-        const query = "SELECT id, nome, categoria_sugerida FROM produtos_padronizados WHERE nome ILIKE $1 ORDER BY nome LIMIT 10";
+        const query = "SELECT id, nome FROM categorias_padronizadas WHERE nome ILIKE $1 ORDER BY nome LIMIT 10";
+        const result = await pool.query(query, [`%${termoBusca}%`]);
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Erro ao buscar categorias:', err.stack);
+        res.status(500).json({ message: 'Erro ao buscar categorias.' });
+    }
+});
+app.post('/api/categorias/find-or-create', isAuth, async (req, res) => {
+    const { nome_categoria } = req.body;
+    if (!nome_categoria) return res.status(400).json({ message: 'Nome da categoria é obrigatório.' });
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        let result = await client.query('SELECT * FROM categorias_padronizadas WHERE nome = $1', [nome_categoria]);
+        let categoria;
+        if (result.rowCount > 0) {
+            categoria = result.rows[0];
+        } else {
+            result = await client.query('INSERT INTO categorias_padronizadas (nome) VALUES ($1) RETURNING *', [nome_categoria]);
+            categoria = result.rows[0];
+        }
+        await client.query('COMMIT');
+        res.status(200).json(categoria);
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Erro em find-or-create categoria:', err.stack);
+        res.status(500).json({ message: 'Erro ao processar categoria.' });
+    } finally {
+        client.release();
+    }
+});
+
+// --- ROTAS DE PRODUTOS ---
+app.get('/api/produtos/buscar', isAuth, async (req, res) => {
+    const termoBusca = req.query.termo || '';
+    try {
+        const query = "SELECT id, nome FROM produtos_padronizados WHERE nome ILIKE $1 ORDER BY nome LIMIT 10";
         const result = await pool.query(query, [`%${termoBusca}%`]);
         res.status(200).json(result.rows);
     } catch (err) {
@@ -94,27 +131,34 @@ app.get('/api/produtos/buscar', isAuth, async (req, res) => { // isAuth FOI ADIC
     }
 });
 app.post('/api/produtos/find-or-create', isAuth, async (req, res) => {
-    const { nome_produto, categoria } = req.body;
+    const { nome_produto } = req.body;
     if (!nome_produto) return res.status(400).json({ message: 'Nome do produto é obrigatório.' });
-    const client = await pool.connect();
     try {
-        await client.query('BEGIN');
-        let result = await client.query('SELECT * FROM produtos_padronizados WHERE nome = $1', [nome_produto]);
+        let result = await pool.query('SELECT * FROM produtos_padronizados WHERE nome = $1', [nome_produto]);
         let produto;
         if (result.rowCount > 0) {
             produto = result.rows[0];
         } else {
-            result = await client.query('INSERT INTO produtos_padronizados (nome, categoria_sugerida) VALUES ($1, $2) RETURNING *', [nome_produto, categoria]);
+            result = await pool.query('INSERT INTO produtos_padronizados (nome) VALUES ($1) RETURNING *', [nome_produto]);
             produto = result.rows[0];
         }
-        await client.query('COMMIT');
         res.status(200).json(produto);
     } catch (err) {
-        await client.query('ROLLBACK');
         console.error('Erro em find-or-create produto:', err.stack);
         res.status(500).json({ message: 'Erro ao processar produto.' });
-    } finally {
-        client.release();
+    }
+});
+app.patch('/api/produtos/:produtoId', isAuth, async (req, res) => {
+    const { produtoId } = req.params;
+    const { categoria_id } = req.body;
+    try {
+        const query = 'UPDATE produtos_padronizados SET categoria_id = $1 WHERE id = $2 RETURNING *';
+        const result = await pool.query(query, [categoria_id, produtoId]);
+        if (result.rowCount === 0) return res.status(404).json({ message: 'Produto não encontrado.' });
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error('Erro ao associar categoria ao produto:', err.stack);
+        res.status(500).json({ message: 'Erro ao associar categoria.' });
     }
 });
 
@@ -240,7 +284,7 @@ app.post('/api/listas/:listaId/limpar-comprados', isAuth, async (req, res) => {
     }
 });
 
-// --- ROTAS DE ITENS (REFATORADAS E COMPLETAS) ---
+// --- ROTAS DE ITENS (REFATORADAS) ---
 app.get('/api/listas/:listaId/itens', isAuth, async (req, res) => {
     const { listaId } = req.params;
     const { usuario_id } = req.session;
@@ -248,12 +292,13 @@ app.get('/api/listas/:listaId/itens', isAuth, async (req, res) => {
         const query = `
             SELECT 
                 i.id, i.lista_id, i.produto_id, i.valor_unitario, i.quantidade, i.comprado,
-                p.nome AS nome_item, p.categoria_sugerida AS categoria
+                p.nome AS nome_item, c.nome AS categoria
             FROM itens_lista i
             JOIN produtos_padronizados p ON i.produto_id = p.id
+            LEFT JOIN categorias_padronizadas c ON p.categoria_id = c.id
             JOIN listas l ON i.lista_id = l.id
             WHERE i.lista_id = $1 AND l.usuario_id = $2
-            ORDER BY p.categoria_sugerida ASC NULLS FIRST, p.nome ASC
+            ORDER BY c.nome ASC NULLS FIRST, p.nome ASC
         `;
         const result = await pool.query(query, [listaId, usuario_id]);
         res.status(200).json(result.rows);

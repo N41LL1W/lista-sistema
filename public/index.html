@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciador de Listas de Compras</title>
-    <!-- NOVO: Estilos para a biblioteca de autocompletar -->
+    <!-- Links para a biblioteca de autocompletar Choices.js -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -12,7 +12,7 @@
     <!-- Container de Autenticação (mostrado inicialmente) -->
     <div id="auth-container">
         <div class="container" id="login-view">
-            <h1>Login v.1.3</h1>
+            <h1>Login</h1>
             <p id="login-feedback" class="feedback-msg"></p>
             <form id="login-form">
                 <input type="email" id="login-email" placeholder="Email" required autocomplete="email">
@@ -50,13 +50,13 @@
             </div>
     
             <div class="modelo-container">
-                <h2>Criar a partir de um Modelo</h2>
+                <h2>Modelos de Lista</h2>
                 <div class="listas-salvas">
                     <ul id="modelos-salvos-ul"></ul>
                 </div>
                 <div class="criar-lista-container">
                     <select id="modelo-select">
-                        <option value="">-- Selecione um Modelo --</option>
+                        <option value="">-- Criar a partir de um Modelo --</option>
                     </select>
                     <input type="text" id="nova-lista-from-modelo-nome" placeholder="Nome da nova lista...">
                     <button id="criar-from-modelo-btn">Criar</button>
@@ -64,7 +64,7 @@
             </div>
             
             <div class="listas-salvas">
-                <h2>Listas Salvas</h2>
+                <h2>Minhas Listas Salvas</h2>
                 <ul id="listas-salvas-ul"></ul>
             </div>
         </div>
@@ -73,12 +73,10 @@
         <div class="container" id="lista-editor" style="display: none;">
             <h1 id="lista-titulo"></h1>
             
-            <div id="editor-lista-container">
-                <!-- MODIFICADO: Container para adicionar item com autocompletar -->
-                <div class="add-item-container">
-                    <select id="buscar-produto-select" placeholder="Digite para buscar ou criar um produto..."></select>
-                    <button id="adicionar-item-lista-btn">Adicionar</button>
-                </div>
+            <!-- Container para Adicionar Itens (MODIFICADO) -->
+            <div class="add-item-container">
+                <select id="buscar-produto-select" placeholder="Digite para buscar ou criar um produto..."></select>
+                <button id="adicionar-item-lista-btn">Adicionar</button>
             </div>
             
             <div class="lista-container">
@@ -98,6 +96,7 @@
         <div class="container" id="modo-compra" style="display: none;">
             <h1 id="compra-titulo"></h1>
             <div class="add-item-container-compra">
+                <!-- MODIFICADO para usar a mesma lógica de autocompletar -->
                 <select id="novo-item-compra-select" placeholder="Adicionar item de última hora..."></select>
                 <button id="adicionar-item-compra-btn">Adicionar</button>
             </div>
@@ -130,8 +129,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <!-- NOVO: Script para a biblioteca de autocompletar -->
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <script src="script.js"></script>
 </body>
