@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
             listaManager.style.display = 'none';
             listaEditor.style.display = 'block';
             modoCompra.style.display = 'none';
-            inicializarChoices(document.getElementById('buscar-produto-select'), (instance) => choicesProdutos = instance);
+            inicializarChoices(document.getElementById('buscar-produto-select'), (instance) => choicesProdutos = instance, onProdutoSelect);
             carregarItensDaLista(listaId);
         };
 
@@ -154,17 +154,17 @@ document.addEventListener('DOMContentLoaded', () => {
             listaManager.style.display = 'none';
             listaEditor.style.display = 'none';
             modoCompra.style.display = 'block';
-            inicializarChoices(document.getElementById('novo-item-compra-select'), (instance) => choicesCompra = instance);
+            inicializarChoices(document.getElementById('novo-item-compra-select'), (instance) => choicesCompra = instance, onProdutoSelect);
             carregarItensDaLista(listaId).then(() => renderizarItensCompra());
         };
-
+        
+        // Funções de API
         const executarAcaoBackend = async (acao) => {
             mostrarLoader();
             try { await acao(); } 
             catch (error) { console.error("Erro na ação de backend:", error); alert("Ocorreu um erro. Tente novamente."); } 
             finally { esconderLoader(); }
         };
-
         const carregarListas = async () => {
             mostrarLoader();
             try {
@@ -176,7 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) { console.error("Erro ao carregar listas:", error); } 
             finally { esconderLoader(); }
         };
-
         const carregarItensDaLista = async (listaId) => {
             mostrarLoader();
             try {
@@ -194,8 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 esconderLoader();
             }
         };
-
-// --- Funções de Renderização ---
+        
+        // Funções de Renderização
         const renderizarListasEModelos = (data) => {
             listasSalvasUL.innerHTML = '';
             if (data.listas.length === 0) {
@@ -224,7 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         };
-
         const renderizarItensLista = () => {
             itensListaUL.innerHTML = '';
             iniciarCompraBtn.disabled = itensAtivos.length === 0;
@@ -246,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 itensAgrupados[categoria].forEach(item => {
                     const li = document.createElement('li');
                     li.className = 'item-editavel';
-                    li.dataset.itemId = item.id; // ID do item na lista
+                    li.dataset.itemId = item.id;
                     li.innerHTML = `
                         <div class="info-item-editavel">
                             <span class="nome-item-editavel">${item.nome_item}</span>
@@ -326,7 +324,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return acc;
             }, {});
         };
-
         const fecharHistorico = () => { modalHistorico.style.display = 'none'; };
         const mostrarHistoricoPrecos = async (produtoId, nomeItem) => {
             historicoTituloItem.textContent = `Histórico de: ${nomeItem}`;
@@ -358,9 +355,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!selectElement) return;
             let currentInstance = selectElement.choices;
             if (currentInstance) currentInstance.destroy();
-
+            
             const newChoices = new Choices(selectElement, {
-                searchPlaceholderValue: "Digite para buscar ou criar...",
+                searchPlaceholderValue: "Digite para buscar...",
                 itemSelectText: 'Adicionar',
                 removeItemButton: true,
                 allowHTML: false,
@@ -368,10 +365,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 noChoicesText: 'Digite 2+ letras para buscar',
             });
             
+            const isCategoria = selectElement.id.includes('categoria');
+            
             selectElement.addEventListener('search', async (event) => {
                 const termo = event.detail.value;
                 if (termo.length < 2) return;
-                const url = selectElement.id.includes('categoria') ? `/api/categorias/buscar?termo=${encodeURIComponent(termo)}` : `/api/produtos/buscar?termo=${encodeURIComponent(termo)}`;
+                const url = isCategoria ? `/api/categorias/buscar?termo=${encodeURIComponent(termo)}` : `/api/produtos/buscar?termo=${encodeURIComponent(termo)}`;
                 const response = await fetch(url);
                 const data = await response.json();
                 if (Array.isArray(data)) {
@@ -398,28 +397,36 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         const adicionarProdutoNaLista = (produtoId) => {
-            console.log("DEBUG 6: Função adicionarProdutoNaLista chamada com ID:", produtoId);
-            if (!produtoId) {
-                console.warn("DEBUG 7: ID do produto inválido. Abortando.");
-                return;
-            }
+            if (!produtoId) return;
             executarAcaoBackend(async () => {
-                console.log(`DEBUG 8: Enviando requisição para adicionar produto ${produtoId} à lista ${listaAtivaId}`);
                 const response = await fetch(`/api/listas/${listaAtivaId}/itens`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ produto_id: produtoId })
                 });
-
-                console.log("DEBUG 9: Resposta da API de adicionar item:", response.status);
                 if(response.status === 409) {
                     alert('Este item já está na lista.');
                 }
-                
-                console.log("DEBUG 10: Recarregando itens da lista...");
                 await carregarItensDaLista(listaAtivaId);
-                if (choicesInstance) choicesInstance.clearStore(); // Limpa o texto do campo de busca
+                if (choicesProdutos) choicesProdutos.clearStore();
+                if (choicesCompra) choicesCompra.clearStore();
             });
+        };
+
+        const onProdutoSelect = (produtoValue, isNew) => {
+            if (isNew) {
+                executarAcaoBackend(async () => {
+                    const response = await fetch('/api/produtos/find-or-create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nome_produto: produtoValue })
+                    });
+                    const produtoCriado = await response.json();
+                    adicionarProdutoNaLista(produtoCriado.id);
+                });
+            } else {
+                adicionarProdutoNaLista(produtoValue);
+            }
         };
 
         const handleEditarCategoria = (spanElemento) => {
@@ -427,9 +434,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectContainer = document.createElement('div');
             selectContainer.className = 'select-container-editavel';
             const select = document.createElement('select');
+            select.id = `select-categoria-${produtoId}`;
             spanElemento.replaceWith(selectContainer);
             selectContainer.appendChild(select);
-
             const onCategoriaSelect = (categoriaValue, isNew) => {
                 executarAcaoBackend(async () => {
                     let categoriaId = categoriaValue;
@@ -440,19 +447,46 @@ document.addEventListener('DOMContentLoaded', () => {
                     await associarProdutoACategoria(produtoId, categoriaId);
                 });
             };
-
             inicializarChoices(select, (instance) => {}, onCategoriaSelect);
+        };
+
+        const criarOuEncontrarCategoria = async (nomeCategoria) => {
+            const response = await fetch('/api/categorias/find-or-create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome_categoria: nomeCategoria })
+            });
+            return response.json();
+        };
+
+        const associarProdutoACategoria = async (produtoId, categoriaId) => {
+            await fetch(`/api/produtos/${produtoId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categoria_id: categoriaId })
+            });
+            await carregarItensDaLista(listaAtivaId);
         };
 
         // --- LISTENERS DA APLICAÇÃO PRINCIPAL ---
         adicionarItemListaBtn.addEventListener('click', () => {
-            const itemSelecionado = choicesInstance ? choicesInstance.getValue(true) : null;
+            const itemSelecionado = choicesProdutos ? choicesProdutos.getValue(true) : null;
             if (itemSelecionado) {
-                adicionarProdutoNaLista(itemSelecionado);
+                onProdutoSelect(itemSelecionado, false);
             } else {
                 alert("Selecione um item da lista ou digite um novo nome e pressione Enter.");
             }
         });
+
+        adicionarItemCompraBtn.addEventListener('click', () => {
+            const itemSelecionado = choicesCompra ? choicesCompra.getValue(true) : null;
+            if (itemSelecionado) {
+                onProdutoSelect(itemSelecionado, false);
+            } else {
+                alert("Selecione um item da lista ou digite um novo nome e pressione Enter.");
+            }
+        });
+
         criarListaBtn.addEventListener('click', () => {
             if (!novaListaNomeInput.value.trim()) return;
             executarAcaoBackend(async () => {
@@ -495,25 +529,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') input.replaceWith(span); });
             }
         });
-        
-        // VERSÃO CORRIGIDA
-        itensListaUL.addEventListener('dblclick', (e) => {
-            const target = e.target;
-            // Agora só nos importamos com o clique no nome do item.
-            if (target.classList.contains('nome-item-editavel')) {
-                alert("A edição de nome de produtos padronizados será uma futura funcionalidade!");
-                // A lógica para editar o nome de um produto padronizado é mais complexa,
-                // então vamos desativá-la temporariamente para evitar confusão.
-                // Quando implementarmos, precisaremos do ID do produto, não do item.
-            }
-        });
 
-        adicionarItemCompraBtn.addEventListener('click', () => {
-            const itemSelecionado = choicesCompraInstance ? choicesCompraInstance.getValue(true) : null;
-            if (itemSelecionado) {
-                adicionarProdutoNaLista(itemSelecionado);
-            } else {
-                alert("Selecione um item da lista ou digite um novo nome e pressione Enter.");
+        itensListaUL.addEventListener('click', (e) => {
+            const target = e.target;
+            if (target.classList.contains('deletar-item-btn')) {
+                if (confirm('Deletar este item da lista?')) {
+                    executarAcaoBackend(async () => {
+                        await fetch(`/api/itens/${e.target.dataset.id}`, { method: 'DELETE' });
+                        await carregarItensDaLista(listaAtivaId);
+                    });
+                }
+            }
+            if (target.classList.contains('categoria-item-editavel')) {
+                handleEditarCategoria(target);
             }
         });
 
@@ -531,6 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderizarItensCompra();
             fetch(`/api/itens/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ valor_unitario: valor, quantidade, comprado }) });
         });
+
         itensCompraUL.addEventListener('click', (e) => {
             if (e.target.classList.contains('historico-btn')) {
                 const li = e.target.closest('li');
@@ -539,6 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 mostrarHistoricoPrecos(produtoId, nomeItem);
             }
         });
+
         resetCompraBtn.addEventListener('click', () => {
             if (confirm('Isso irá limpar todos os preços, quantidades e marcações desta compra. Deseja continuar?')) {
                 executarAcaoBackend(async () => {
@@ -548,6 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
+
         finalizarCompraBtn.addEventListener('click', () => {
             const itensParaSalvar = itensAtivos.filter(item => item.comprado && item.valor_unitario > 0);
             if (itensParaSalvar.length === 0) {
@@ -566,6 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
+
         limparMarcadosBtn.addEventListener('click', () => {
             const itensMarcados = itensAtivos.filter(item => item.comprado);
             if (itensMarcados.length === 0) {
@@ -580,6 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
+
         salvarComoModeloBtn.addEventListener('click', () => {
             const nomeTemplate = prompt("Digite um nome para este modelo:", listaTitulo.textContent.replace('Lista: ', ''));
             if (nomeTemplate && nomeTemplate.trim() !== "") {
@@ -596,6 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
+
         criarFromModeloBtn.addEventListener('click', () => {
             const modeloId = modeloSelect.value;
             const nomeNovaLista = novaListaFromModeloNomeInput.value;
@@ -616,6 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else { alert("Falha ao criar lista a partir do modelo."); }
             });
         });
+
         modelosSalvosUL.addEventListener('click', (e) => {
             const target = e.target;
             if (target.classList.contains('deletar-lista-btn')) {
@@ -628,6 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+
         compartilharBtn.addEventListener('click', () => {
             executarAcaoBackend(async () => {
                 const response = await fetch(`/api/listas/${listaAtivaId}/token`);
@@ -641,10 +677,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 prompt("Copie este link para compartilhar sua lista (somente visualização):", shareUrl);
             });
         });
+
         voltarBtn.addEventListener('click', mostrarManager);
         voltarCompraBtn.addEventListener('click', mostrarManager);
         iniciarCompraBtn.addEventListener('click', () => mostrarCompra(listaTitulo.textContent.replace('Lista: ', '')));
-        novoItemCompraInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') adicionarItemCompraBtn.click(); });
         fecharModalHistoricoBtn.addEventListener('click', fecharHistorico);
         modalHistorico.addEventListener('click', (e) => {
             if (e.target === modalHistorico) {
