@@ -353,8 +353,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- LÓGICA DE AUTOCOMPLETAR (CHOICES.JS) ---
         const inicializarChoices = (selectElement, setInstanceCallback, onSelectCallback) => {
             if (!selectElement) return;
+
+            // Destrói a instância anterior para evitar bugs de memória
             let currentInstance = selectElement.choices;
-            if (currentInstance) currentInstance.destroy();
+            if (currentInstance) {
+                currentInstance.destroy();
+            }
             
             const newChoices = new Choices(selectElement, {
                 searchPlaceholderValue: "Digite para buscar...",
@@ -364,36 +368,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 noResultsText: 'Nenhum resultado, pressione Enter para criar',
                 noChoicesText: 'Digite 2+ letras para buscar',
             });
-            
+
             const isCategoria = selectElement.id.includes('categoria');
             
+            // Listener de Busca (Autocompletar)
             selectElement.addEventListener('search', async (event) => {
-                const termo = event.detail.value;
-                if (termo.length < 2) return;
-                const url = isCategoria ? `/api/categorias/buscar?termo=${encodeURIComponent(termo)}` : `/api/produtos/buscar?termo=${encodeURIComponent(termo)}`;
-                const response = await fetch(url);
-                const data = await response.json();
-                if (Array.isArray(data)) {
-                    const choicesData = data.map(d => ({ value: d.id, label: d.nome }));
-                    newChoices.setChoices(choicesData, 'value', 'label', false);
+                try {
+                    const termo = event.detail.value;
+                    if (termo.length < 2) return;
+                    const url = isCategoria ? `/api/categorias/buscar?termo=${encodeURIComponent(termo)}` : `/api/produtos/buscar?termo=${encodeURIComponent(termo)}`;
+                    const response = await fetch(url);
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    if (Array.isArray(data)) {
+                        const choicesData = data.map(d => ({ value: d.id, label: d.nome }));
+                        newChoices.setChoices(choicesData, 'value', 'label', false);
+                    }
+                } catch (error) {
+                    console.error("Erro na busca de autocompletar:", error);
                 }
             });
 
-            selectElement.addEventListener('addItem', async (event) => {
-                if (!isNaN(event.detail.value)) return;
-                const nomeNovo = event.detail.value;
-                newChoices.removeActiveItemsByValue(nomeNovo);
-                onSelectCallback(nomeNovo, true);
+            // Listener de SELEÇÃO de um item da lista
+            selectElement.addEventListener('change', (event) => {
+                if (event.detail.value && !isNaN(event.detail.value)) {
+                    onSelectCallback(event.detail.value, false);
+                }
             });
             
-            selectElement.addEventListener('change', (event) => {
-                if(event.detail.value && !isNaN(event.detail.value)){
-                    onSelectCallback(event.detail.value, false);
+            // Listener de CRIAÇÃO de um novo item com a tecla Enter
+            const inputDoChoices = newChoices.input.element;
+            inputDoChoices.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    const nomeNovo = inputDoChoices.value.trim();
+                    const itemSelecionado = newChoices.getValue();
+
+                    if (nomeNovo && !itemSelecionado) {
+                        event.preventDefault();
+                        newChoices.clearInput();
+                        onSelectCallback(nomeNovo, true); // Chama a função de callback informando que é um item novo
+                    }
                 }
             });
 
             setInstanceCallback(newChoices);
-            newChoices.showDropdown();
         };
         
         const adicionarProdutoNaLista = (produtoId) => {
