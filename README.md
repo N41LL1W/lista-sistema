@@ -86,6 +86,4 @@ O projeto tem uma base sólida para crescer ainda mais. A próxima grande etapa 
 *   Criar um pequeno gráfico de tendência de preço ao longo do tempo.
 
 ---
-_Este projeto foi desenvolvido com o auxílio do Gemini, uma IA do Google._```
-
----
+_Este projeto foi desenvolvido com o auxílio do Gemini, uma IA do Google._
